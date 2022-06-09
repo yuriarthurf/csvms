@@ -66,28 +66,33 @@ class Table():
     FORMAT="csv" # Data file format
     CSVSEP=";"   # Separator
 
-    def __init__(self, name:str, columns:Dict[str,type], data:List[tuple]=None, temp:bool=False):
+    def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=None, temp:bool=False):
         """Table representation and the data file using database location path to store all rows
         :param name: Table identifier composed by database name and the table name separated by '.'. If the database name was omitted, uses the default database instead
         :param columns: Dictionary with columns names and data types
         :param data: Load table tuples into table rows. If 'None' load from data file. Default is 'None'
         :param temp: If 'False' create datafile, other else the rows will be available only on python memory. Default 'False'
         """
+        self.header = False
         _db = DEFAULT_DB
         self.name = name
         if name.find('.') != -1:
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
+        if self.columns is None:
+            self.header = True
         self.rows = list()
         if data is not None:
             self.rows = data
         else:
             if exists(self.location):
-                self.rows = list(self.load_csv())
+                self.rows = list(self.load())
             elif not temp:
                 logger.debug("create:%s",self.location)
                 Path(self.location).touch()
+        if self.columns is None:
+            raise ValueError("Can't create table without columns")
 
     @property
     def full_name(self):
@@ -112,13 +117,18 @@ class Table():
         """Return an tuple with 'None' values for each column"""
         return tuple([None for _ in self.columns])
 
-    def load_csv(self) -> List[tuple]:
+    def load(self) -> List[tuple]:
         """Load csv file from path with column formats
         :return: Tuple iterator
         """
         with open(self.location, mode='r', encoding="utf-8") as csv_file:
             csv_reader = reader(csv_file, delimiter=Table.CSVSEP)
+            _head = self.header
             for raw in csv_reader:
+                if _head:
+                    self.columns = {val:str for val in raw}
+                    _head = False
+                    continue
                 row = list()
                 for idx, col in enumerate(self.columns.values()):
                     row.append(col(raw[idx]))
@@ -128,7 +138,11 @@ class Table():
         """Write data to file system"""
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
             csv_writer = writer(csv_file, delimiter=Table.CSVSEP, quotechar='"')
+            _head = self.header
             for row in self.rows:
+                if _head:
+                    _head = False
+                    csv_writer.writerow(tuple(self.columns.keys()))
                 csv_writer.writerow(row)
         return True
 
@@ -166,6 +180,7 @@ class Table():
             yield self.empty_row
 
     def __getitem__(self, key):
+        """Return rows as Dict"""
         row = dict()
         for idx, name in enumerate(self.columns):
             try:
@@ -176,13 +191,16 @@ class Table():
         return row
 
     def __iter__(self):
+        """Iteration over all rows"""
         for row in self.rows:
             yield row
 
     def __len__(self):
+        """Number of rows"""
         return len(self.rows)
 
     def __repr__(self):
+        """Table definition in JSON format"""
         return json.dumps(self.definition)
 
     def __str__(self):
