@@ -9,5 +9,5 @@ tests/data/
 # Cache
 __pycache__
 # Temp files
-database/
+data/
 tmp.py
