@@ -55,10 +55,7 @@ Without spefify a database on **name** this table will be created under a defaul
 Using `print` you can they see the object as a table representation
 
 ```python
-print(tbl)
-```
-
-```log
+>>> print(tbl)
    +---+-----+---+
    |c1 |c2   |c3 |
    +---+-----+---+
@@ -80,3 +77,72 @@ cat data/default/sample.csv
 ```
 
 > For more informatios use `help(Table)`
+
+#### Data access
+
+It's possible to access a row by your **index** value, like a simple python tuple
+
+```python
+>>> tbl[1]
+{'c1': 2, 'c2': 'World', 'c3': 1.0}
+```
+
+The row will be return as an **dictionary**, so, with the column name (after the index) you can access the value associated
+
+```python
+>>> tbl[1]["c2"]
+'World'
+```
+
+It's also possible iterate into all rows using a `for` loop
+
+```python
+>>> for row in tbl:
+...     print(row)
+... 
+(1, 'Hello', 0.1)
+(2, 'World', 1.0)
+```
+
+#### Data manipulation
+
+You can add a new row using the `+` simple
+
+```python
+>>> tbl + (3, "Some", 0)
+>>> print(tbl)
+   +---+-----+---+
+   |c1 |c2   |c3 |
+   +---+-----+---+
+  0|  1|Hello|0.1|
+  1|  2|World|1.0|
+  2|  3| Some|0.0|
+   +---+-----+---+
+```
+
+Update a specific row by your **index**
+
+```python
+>>> tbl[0] = (4, "Value", 3.3)
+>>> print(tbl)
+   +---+-----+---+
+   |c1 |c2   |c3 |
+   +---+-----+---+
+  0|  4|Value|3.3|
+  1|  2|World|1.0|
+  2|  3| Some|0.0|
+   +---+-----+---+
+```
+
+And also remove a row by the **index**
+
+```python
+>>> del tbl[1]
+>>> print(tbl)
+   +---+-----+---+
+   |c1 |c2   |c3 |
+   +---+-----+---+
+  0|  4|Value|3.3|
+  1|  3| Some|0.0|
+   +---+-----+---+
+```
