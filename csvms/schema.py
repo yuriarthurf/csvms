@@ -36,7 +36,8 @@ operations = {
 strtypes = {value:key for key, value in dtypes.items()}
 
 class Database():
-    """The database is an file system directory used to store table data files on the local file system"""
+    """The database is an file system directory
+       Used to store table data files on the local file system"""
     def __init__(self, name:str, temp=False) -> "Database":
         """Database representation
         :param name: Database identifier
@@ -68,10 +69,12 @@ class Table():
 
     def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=None, temp:bool=False):
         """Table representation and the data file using database location path to store all rows
-        :param name: Table identifier composed by database name and the table name separated by '.'. If the database name was omitted, uses the default database instead
+        :param name: Table identifier composed by database name and the table name separated by '.'
+                     If the database name was omitted, uses the default database instead
         :param columns: Dictionary with columns names and data types
         :param data: Load table tuples into table rows. If 'None' load from data file. Default is 'None'
-        :param temp: If 'False' create datafile, other else the rows will be available only on python memory. Default 'False'
+        :param temp: If 'False' create datafile, other else the rows will be available only on python memory.
+                     Default 'False'
         """
         self.temporary = temp
         self.header = False
@@ -243,7 +246,7 @@ class Table():
     def where(self, column:str, expression:str) -> List[tuple]:
         """Return a subset of rows based on a condition
         :param column: Identifier of the column where the expression will be apply
-        :param expression: A expression composed by the operation and value. 
+        :param expression: A expression composed by the operation and value.
                            See 'operations' dictionary to get the list of valid options
         :return: List of tuple filtered by the expression
 
@@ -258,7 +261,7 @@ class Table():
         op_keys = '|'.join(operations.keys())
         match = next(re.finditer(rf"({op_keys})\s+(.+)", expression, re.IGNORECASE))
         for idx, row in enumerate(self):
-            if operations[match.group(1)](self[idx][column],eval(match.group(2))):
+            if operations[match.group(1)](self[idx][column], eval(match.group(2))):
                 yield row
                 empty = False
         if empty:
