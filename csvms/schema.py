@@ -149,7 +149,10 @@ class Table():
     def clean(self) -> bool:
         """Remove all table data"""
         self.rows = list()
-        return self.save()
+        if exists(self.location):
+            remove(self.location)
+        Path(self.location).touch()
+        return True
 
     def drop(self) -> bool:
         """Remove physical file"""
