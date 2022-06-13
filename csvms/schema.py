@@ -146,8 +146,13 @@ class Table():
                 csv_writer.writerow(row)
         return True
 
+    def clean(self) -> bool:
+        """Remove all table data"""
+        self.rows = list()
+        return self.save()
+
     def drop(self) -> bool:
-        """Remove data from file system"""
+        """Remove physical file"""
         remove(self.location)
         return True
 
