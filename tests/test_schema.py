@@ -53,4 +53,8 @@ def test_alter_table(tbl):
     assert [row for row in tbl] == [(1,"a",0.55,"0"),(2,"b",1.05,"0"),(3,"c",9.99,"0")]
     assert tbl.alter("drop", {"coluna":str})
     assert [row for row in tbl] == [(1,"a",0.55),(2,"b",1.05),(3,"c",9.99)]
-    
+
+def test_data_manipulation(tbl):
+    """ Tert table DMLs """
+    del tbl[0]
+    assert len(tbl) == 2

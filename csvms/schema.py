@@ -267,6 +267,10 @@ class Table():
         if empty:
             yield self.empty_row
 
+    def __delitem__(self, key):
+        """Remove line from table"""
+        del self.rows[key]
+
     def __getitem__(self, key):
         """Return rows as Dict"""
         row = dict()
