@@ -1,5 +1,5 @@
 """ CSVMS Module """
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 import logging
 from os import environ
 from pathlib import Path
