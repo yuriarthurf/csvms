@@ -243,6 +243,16 @@ class Table():
         """Print pretty table data"""
         print(self)
 
+    @classmethod
+    def _condition_parser_(cls, exp:str) -> List[str]:
+        """Condition parser
+        :param exp: String with operation
+        :return: List with operation name and value
+        """
+        ops = '|'.join(operations.keys())
+        match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
+        return [match.group(1), match.group(2)]
+
     def where(self, column:str, expression:str) -> List[tuple]:
         """Return a subset of rows based on a condition
         :param column: Identifier of the column where the expression will be apply
@@ -258,18 +268,50 @@ class Table():
         > where("name", "eq 'Peter'")
         """
         empty = True
-        op_keys = '|'.join(operations.keys())
-        match = next(re.finditer(rf"({op_keys})\s+(.+)", expression, re.IGNORECASE))
+        ops, val = Table._condition_parser_(expression)
         for idx, row in enumerate(self):
-            if operations[match.group(1)](self[idx][column], eval(match.group(2))):
+            if operations[ops](self[idx][column], eval(val)):
                 yield row
                 empty = False
         if empty:
             yield self.empty_row
 
-    def __delitem__(self, key):
-        """Remove line from table"""
-        del self.rows[key]
+    def _validade_(self, value) -> tuple:
+        row = tuple()
+        try:
+            for idx, val in enumerate(self.columns.values()):
+                row += (val(value[idx]),)
+            return row
+        except IndexError as err:
+            logger.error(err)
+        except ValueError as err:
+            logger.error(err)
+        raise ValueError("Invalid data")
+
+    def __setitem__(self, idx:int, value:tuple) -> bool:
+        """Update row
+        :param idx: Index row to update
+        :param value: New values to the row
+        """
+        self.rows[idx] = self._validade_(value)
+        logger.info("Row updated")
+        return True
+
+    def __delitem__(self, idx) -> None:
+        """Remove line from table
+        :param idx: Row table index to delete
+        """
+        del self.rows[idx]
+        logger.info("Row deleted")
+
+    def __add__(self, value:tuple) -> bool:
+        """Add new row
+        :param value: Tuple of value to insert
+        :return: True if table insertion was succeeded
+        """
+        self.rows.append(self._validade_(value))
+        logger.info("Row inserted")
+        return True
 
     def __getitem__(self, key):
         """Return rows as Dict"""
