@@ -159,16 +159,16 @@ class Table():
         """
         for key, val in column.items():
             if option.upper() == "ADD":
-                return self.add_column(key, val)
+                return self._add_column_(key, val)
             if option.upper() == "DROP":
-                return self.drop_column(key)
+                return self._drop_column_(key)
             if option.upper() == "MODIFY":
                 if new is None:
                     raise ValueError("Need to inform new column definition")
-                return self.modify_column(key, new)
+                return self._modify_column_(key, new)
         return False
 
-    def add_column(self, name:str, dtype:type) -> bool:
+    def _add_column_(self, name:str, dtype:type) -> bool:
         """Add new column to table
         :param name: Column name
         :param dtype: Column data type
@@ -179,7 +179,7 @@ class Table():
             self.rows[idx] = row + (dtype(),) # Add default values
         return True
 
-    def drop_column(self, column:str) -> bool:
+    def _drop_column_(self, column:str) -> bool:
         """Drop column from table
         :param key: Column name
         :return: True if table alteration was succeeded
@@ -198,7 +198,7 @@ class Table():
             self.rows[pos] = tuple(row) # Update row
         return True
 
-    def modify_column(self, name:str, column:Dict[str,type]) -> bool:
+    def _modify_column_(self, name:str, column:Dict[str,type]) -> bool:
         """Drop column from table
         :param name: Column name
         :param column: New column
