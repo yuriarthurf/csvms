@@ -73,6 +73,7 @@ class Table():
         :param data: Load table tuples into table rows. If 'None' load from data file. Default is 'None'
         :param temp: If 'False' create datafile, other else the rows will be available only on python memory. Default 'False'
         """
+        self.temporary = temp
         self.header = False
         _db = DEFAULT_DB
         self.name = name
@@ -146,12 +147,88 @@ class Table():
                 csv_writer.writerow(row)
         return True
 
+    def alter(self, option:str, column:Dict[str,type], new:Dict[str,type]=None) -> bool:
+        """Alter table definitions
+        :param option: Accepts ADD, DROP and MODIFY
+        :param column: Where to apply alteration
+        :param new: New column definition. Only used on MODIFY operations. Default is None
+        :return: True if table alteration was succeeded
+        """
+        for key, val in column.items():
+            if option.upper() == "ADD":
+                return self.add_column(key, val)
+            if option.upper() == "DROP":
+                return self.drop_column(key)
+            if option.upper() == "MODIFY":
+                if new is None:
+                    raise ValueError("Need to inform new column definition")
+                return self.modify_column(key, new)
+        return False
+
+    def add_column(self, name:str, dtype:type) -> bool:
+        """Add new column to table
+        :param name: Column name
+        :param dtype: Column data type
+        :return: True if table alteration was succeeded
+        """
+        self.columns.update({name:dtype}) # Add column definition
+        for idx, row in enumerate(self.rows):
+            self.rows[idx] = row + (dtype(),) # Add default values
+        return True
+
+    def drop_column(self, column:str) -> bool:
+        """Drop column from table
+        :param key: Column name
+        :return: True if table alteration was succeeded
+        """
+        idx = None
+        for pos, col in enumerate(self.columns.keys()):
+            if col == column:
+                idx = pos # Save colum index
+                del self.columns[column] # Remove from columns
+                break # exit from loop
+        if idx is None:
+            raise ValueError(f"Column {column} not found")
+        for pos, row in enumerate(self.rows):
+            row = list(row) # Convert to list
+            del row[idx] # remove value for column index
+            self.rows[pos] = tuple(row) # Update row
+        return True
+
+    def modify_column(self, name:str, column:Dict[str,type]) -> bool:
+        """Drop column from table
+        :param name: Column name
+        :param column: New column
+        :return: True if table alteration was succeeded
+        """
+        idx = None
+        val = next(iter(column.values()))
+        for pos, col in enumerate(self.columns.keys()):
+            if col == name:
+                idx = pos # Save colum index
+                self.columns.update(column) # Update definition
+                del self.columns[col] # Remove old column
+                break # exit from loop
+        tmp_rows = self.rows
+        try:
+            for pos, row in enumerate(self.rows):
+                row = list(row)
+                row[idx] = val(row[idx]) # Update column value
+                print(type(val(row[idx])))
+                self.rows[pos] = tuple(row) # Update row list
+        except Exception as err:
+            logger.error(err)
+            self.rows = tmp_rows
+            raise ValueError(f"Cant change data type for column {name}")
+        return True
+
     def clean(self) -> bool:
         """Remove all table data"""
         self.rows = list()
         if exists(self.location):
             remove(self.location)
-        Path(self.location).touch()
+        if not self.temporary:
+            Path(self.location).touch()
         return True
 
     def drop(self) -> bool:

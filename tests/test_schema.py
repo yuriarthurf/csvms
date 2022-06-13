@@ -44,3 +44,13 @@ def test_imput_output(tbl):
     assert test_table_data(Table(f"{tbl.database.name}.{tbl.name}", tbl.columns))
     assert tbl.drop()
     assert not exists(tbl.location)
+
+def test_alter_table(tbl):
+    """ Test table definition alterations """
+    assert tbl.alter("add", {"nova":int})
+    assert [row for row in tbl] == [(1,"a",0.55,0),(2,"b",1.05,0),(3,"c",9.99,0)]
+    assert tbl.alter("modify", {"nova":int}, {"coluna":str})
+    assert [row for row in tbl] == [(1,"a",0.55,"0"),(2,"b",1.05,"0"),(3,"c",9.99,"0")]
+    assert tbl.alter("drop", {"coluna":str})
+    assert [row for row in tbl] == [(1,"a",0.55),(2,"b",1.05),(3,"c",9.99)]
+    
