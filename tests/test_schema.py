@@ -58,7 +58,7 @@ def test_data_manipulation(tbl):
     """ Tert table DMLs """
     del tbl[0]
     assert len(tbl) == 2
-    assert tbl + (4,"d",0)
+    assert tbl.append(4,"d",0)
     assert len(tbl) == 3
     tbl[0]=(5,"e",2.2)
     assert tbl[0] == {"chave":int(5), "desc":str("e"), "valor": float(2.2)}

@@ -86,12 +86,12 @@ class Table():
         self.columns = columns
         if self.columns is None:
             self.header = True
-        self.rows = list()
+        self._rows = list()
         if data is not None:
-            self.rows = data
+            self._rows = data
         else:
             if exists(self.location):
-                self.rows = list(self.load())
+                self._rows = list(self.load())
             elif not temp:
                 logger.debug("create:%s",self.location)
                 Path(self.location).touch()
@@ -143,7 +143,7 @@ class Table():
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
             csv_writer = writer(csv_file, delimiter=Table.CSVSEP, quotechar='"')
             _head = self.header
-            for row in self.rows:
+            for row in self._rows:
                 if _head:
                     _head = False
                     csv_writer.writerow(tuple(self.columns.keys()))
@@ -175,8 +175,8 @@ class Table():
         :return: True if table alteration was succeeded
         """
         self.columns.update({name:dtype}) # Add column definition
-        for idx, row in enumerate(self.rows):
-            self.rows[idx] = row + (dtype(),) # Add default values
+        for idx, row in enumerate(self._rows):
+            self._rows[idx] = row + (dtype(),) # Add default values
         return True
 
     def _drop_column_(self, column:str) -> bool:
@@ -192,10 +192,10 @@ class Table():
                 break # exit from loop
         if idx is None:
             raise ValueError(f"Column {column} not found")
-        for pos, row in enumerate(self.rows):
+        for pos, row in enumerate(self._rows):
             row = list(row) # Convert to list
             del row[idx] # remove value for column index
-            self.rows[pos] = tuple(row) # Update row
+            self._rows[pos] = tuple(row) # Update row
         return True
 
     def _modify_column_(self, name:str, column:Dict[str,type]) -> bool:
@@ -212,22 +212,22 @@ class Table():
                 self.columns.update(column) # Update definition
                 del self.columns[col] # Remove old column
                 break # exit from loop
-        tmp_rows = self.rows
+        tmp_rows = self._rows
         try:
-            for pos, row in enumerate(self.rows):
+            for pos, row in enumerate(self._rows):
                 row = list(row)
                 row[idx] = val(row[idx]) # Update column value
                 print(type(val(row[idx])))
-                self.rows[pos] = tuple(row) # Update row list
+                self._rows[pos] = tuple(row) # Update row list
         except Exception as err:
             logger.error(err)
-            self.rows = tmp_rows
+            self._rows = tmp_rows
             raise ValueError(f"Cant change data type for column {name}")
         return True
 
     def clean(self) -> bool:
         """Remove all table data"""
-        self.rows = list()
+        self._rows = list()
         if exists(self.location):
             remove(self.location)
         if not self.temporary:
@@ -288,12 +288,21 @@ class Table():
             logger.error(err)
         raise ValueError("Invalid data")
 
+    def append(self, *values) -> bool:
+        """Add new row
+        :param values: list of values, separated by comma, to insert into
+        :return: True if table insertion was succeeded
+        """
+        self._rows.append(self._validade_(values))
+        logger.info("Row inserted")
+        return True
+
     def __setitem__(self, idx:int, value:tuple) -> bool:
         """Update row
         :param idx: Index row to update
         :param value: New values to the row
         """
-        self.rows[idx] = self._validade_(value)
+        self._rows[idx] = self._validade_(value)
         logger.info("Row updated")
         return True
 
@@ -301,37 +310,25 @@ class Table():
         """Remove line from table
         :param idx: Row table index to delete
         """
-        del self.rows[idx]
+        del self._rows[idx]
         logger.info("Row deleted")
-
-    def __add__(self, value:tuple) -> bool:
-        """Add new row
-        :param value: Tuple of value to insert
-        :return: True if table insertion was succeeded
-        """
-        self.rows.append(self._validade_(value))
-        logger.info("Row inserted")
-        return True
 
     def __getitem__(self, key):
         """Return rows as Dict"""
-        row = dict()
-        for idx, name in enumerate(self.columns):
-            try:
-                row[name]=self.rows[key][idx]
-            except IndexError:
-                logger.error("Row %s not find", str(key))
-                return {col:None for col in self.columns}
-        return row
+        try:
+            return {n:self._rows[key][i] for i,n in enumerate(self.columns)}
+        except IndexError:
+            logger.debug("Row %s not found", key)
+            return {col:None for col in self.columns.keys()}
 
     def __iter__(self):
         """Iteration over all rows"""
-        for row in self.rows:
+        for row in self._rows:
             yield row
 
     def __len__(self):
         """Number of rows"""
-        return len(self.rows)
+        return len(self._rows)
 
     def __repr__(self):
         """Table definition in JSON format"""
