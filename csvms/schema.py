@@ -239,9 +239,58 @@ class Table():
         remove(self.location)
         return True
 
-    def show(self) -> str:
+    def show(self, size:int=10, trunc:bool=True) -> str:
         """Print pretty table data"""
-        print(self)
+        idx_pad = 3
+        # Max size of each column
+        col_size = dict()
+        for col in self.columns:
+            col_size[col]=len(col)+1
+            for idx, _ in enumerate(self):
+                cols = len(str(self[idx][col]))
+                if col_size[col] < cols:
+                    col_size[col]= cols
+        # Table line separator
+        sep = f"{' ':{'>'}{idx_pad}}+"
+        for key in self.columns.keys():
+            sep += f"{'-':{'-'}{'<'}{col_size[key]}}+"
+        # Table header
+        col = f"{' ':{'>'}{idx_pad}}|"
+        for key in self.columns.keys():
+            if trunc:
+                col += f"{key.split('.')[-1]:{'<'}{col_size[key]}}|"
+            else:
+                col += f"{key:{'<'}{col_size[key]}}|"
+        # Table rows
+        rows = str()
+        if len(self) <= size:
+            size = len(self)
+            for idx in range(size):
+                rows += f"{idx:{''}{'>'}{idx_pad}}|"
+                for key, val in self[idx].items():
+                    rows += f"{str(val):{'>'}{col_size[key]}}|"
+                rows+='\n'
+        else:
+            for idx in range(int(size/2)):
+                rows += f"{idx:{''}{'>'}{idx_pad}}|"
+                for key, val in self[idx].items():
+                    rows += f"{str(val):{'>'}{col_size[key]}}|"
+                rows+='\n'
+            # Separator row,
+            rows += f"{' ':{'>'}{idx_pad}}|"
+            for key in self.columns.keys():
+                rows += f"{'...':{''}{'<'}{col_size[key]}}|"
+            rows+='\n'
+            #reversed rows
+            for idx in reversed(range(int(size/2))):
+                _idx = len(self)-idx-1
+                rows += f"{_idx:{''}{'>'}{idx_pad}}|"
+                for key, val in self[_idx].items():
+                    rows += f"{str(val):{'>'}{col_size[key]}}|"
+                rows+='\n'
+        if len(rows)>0:
+            return f"""{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
+        print(f"""{sep}\n{col}\n{sep}\n{sep}\n""")
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
@@ -336,30 +385,4 @@ class Table():
 
     def __str__(self):
         """Pretty table format"""
-        idx_size = 3
-        # Max size of each column
-        col_size = dict()
-        for col in self.columns:
-            col_size[col]=len(col)+1
-            for idx, _ in enumerate(self):
-                size = len(str(self[idx][col]))
-                if col_size[col] < size:
-                    col_size[col]=size
-        # Table line separator
-        sep = f"{' ':{'>'}{idx_size}}+"
-        for key in self.columns.keys():
-            sep += f"{'-':{'-'}{'<'}{col_size[key]}}+"
-        # Table header
-        col = f"{' ':{'>'}{idx_size}}|"
-        for key in self.columns.keys():
-            col += f"{key.split('.')[-1]:{'<'}{col_size[key]}}|"
-        # Table rows
-        rows = str()
-        for idx, _ in enumerate(self):
-            rows += f"{idx:{''}{'>'}{idx_size}}|"
-            for key, val in self[idx].items():
-                rows += f"{str(val):{'>'}{col_size[key]}}|"
-            rows+='\n'
-        if len(rows)>0:
-            return f"""{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
-        return f"""{sep}\n{col}\n{sep}\n{sep}\n"""
+        return self.show()
