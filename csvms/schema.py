@@ -279,7 +279,7 @@ class Table():
             # Separator row,
             rows += f"{' ':{'>'}{idx_pad}}|"
             for key in self.columns.keys():
-                rows += f"{'...':{''}{'<'}{col_size[key]}}|"
+                rows += f"{'...':{''}{'>'}{col_size[key]}}|"
             rows+='\n'
             #reversed rows
             for idx in reversed(range(int(size/2))):
@@ -290,7 +290,7 @@ class Table():
                 rows+='\n'
         if len(rows)>0:
             return f"""{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
-        print(f"""{sep}\n{col}\n{sep}\n{sep}\n""")
+        return f"""{sep}\n{col}\n{sep}\n{sep}\n"""
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
