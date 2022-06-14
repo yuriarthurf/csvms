@@ -386,3 +386,12 @@ class Table():
     def __str__(self):
         """Pretty table format"""
         return self.show()
+
+    # Relational Algebra operators
+    def __add__(self, other:"Table") -> "Table":
+        return Table(
+            name = "union",
+            columns=self.columns,
+            data= list(dict.fromkeys(self._rows+other._rows)),
+            temp=True
+        )
