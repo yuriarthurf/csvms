@@ -389,9 +389,19 @@ class Table():
 
     # Relational Algebra operators
     def __add__(self, other:"Table") -> "Table":
+        """Union"""
         return Table(
             name = "union",
             columns=self.columns,
             data= list(dict.fromkeys(self._rows+other._rows)),
+            temp=True
+        )
+
+    def __mod__(self, other:"Table") -> "Table":
+        """Intersection"""
+        return Table(
+            name = "intersection",
+            columns=self.columns,
+            data=[r for r in self for o in other if r == o],
             temp=True
         )
