@@ -108,7 +108,7 @@ It's also possible iterate into all rows using a `for` loop
 
 #### Data manipulation
 
-You can add a new row using the `+` simple
+You can add a new row using the `append` function
 
 ```python
 >>> tbl.append(3, "Some", 0)
