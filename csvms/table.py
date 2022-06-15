@@ -22,17 +22,21 @@ dtypes = {
 }
 # Supported operations
 operations = {
-    'lt' :lambda x,y:x < y  ,
-    'gt' :lambda x,y:x > y  ,
-    'eq' :lambda x,y:x == y ,
-    'lte':lambda x,y:x <= y ,
-    'gte':lambda x,y:x >= y ,
-    'neq':lambda x,y:x != y ,
-    'is' :lambda x,y:x is y ,
-    'in' :lambda x,y:x in y ,
-    'or' :lambda x,y:x or y ,
-    'and':lambda x,y:x and y,
+    'lt'     :lambda x,y:x < y  ,
+    'gt'     :lambda x,y:x > y  ,
+    'eq'     :lambda x,y:x == y ,
+    'lte'    :lambda x,y:x <= y ,
+    'gte'    :lambda x,y:x >= y ,
+    'neq'    :lambda x,y:x != y ,
+    'is'     :lambda x,y:x is y ,
+    'in'     :lambda x,y:x in y ,
+    'nin'    :lambda x,y:x not in y ,
+    'or'     :lambda x,y:x or y ,
+    'and'    :lambda x,y:x and y,
+    'missing':lambda   x:x is None,
+    'exists' :lambda   x:x is not None,
 }
+
 # Supported operations reverse
 strtypes = {value:key for key, value in dtypes.items()}
 
@@ -268,7 +272,10 @@ class Table():
         row = tuple()
         try:
             for idx, val in enumerate(self.columns.values()):
-                row += (val(value[idx]),)
+                if value[idx] is None:
+                    row += (None,)
+                else:
+                    row += (val(value[idx]),)
             return row
         except IndexError as err:
             logger.debug(err)
@@ -383,6 +390,8 @@ class Table():
         value = lambda v: row[v] if isinstance(v,str) and v in self.columns.keys() else v
         if isinstance(ast, dict):
             for key, val in ast.items():
+                if key in ['missing','exists']:
+                    return operations[key](value(val))
                 if len(val)>2: # Multiple conditions with and/or
                     return self.__filter__(row, {key:[val[-2],val[-1]]})
                 _x_, _y_ = val
