@@ -1,7 +1,8 @@
 """Catalog test cases"""
 from os.path import exists
 import pytest
-from csvms.schema import Table, FILE_DIR
+from csvms import FILE_DIR
+from csvms.table import Table
 
 @pytest.fixture()
 def tbl():
