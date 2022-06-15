@@ -5,6 +5,8 @@
 
 Python module to manage **CSV** data like a DBMS application
 
+![logo](img/logo.png)
+
 ## Installation
 
 ```bash
@@ -109,7 +111,7 @@ It's also possible iterate into all rows using a `for` loop
 You can add a new row using the `+` simple
 
 ```python
->>> tbl + (3, "Some", 0)
+>>> tbl.append(3, "Some", 0)
 >>> print(tbl)
    +---+-----+---+
    |c1 |c2   |c3 |
