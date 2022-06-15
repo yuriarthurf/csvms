@@ -12,13 +12,11 @@ def tbl():
     columns={
         "chave":int,
         "desc":str,
-        "valor":float
-    },
+        "valor":float},
     data=[
         (1,"a",0.55),
         (2,"b",1.05),
-        (3,"c",9.99),
-    ])
+        (3,"c",9.99)])
     yield table
     if table.save():
         table.drop()
@@ -42,9 +40,17 @@ def test_imput_output(tbl):
     """ Teste table Imput and Outup """
     assert tbl.location == f"{tbl.database.location}/{tbl.name}.{Table.FORMAT}"
     assert tbl.save()
-    assert test_table_data(Table(f"{tbl.database.name}.{tbl.name}", tbl.columns))
+    assert exists(tbl.database.catalog.location)
+    assert tbl.database.catalog[tbl.full_name] == {
+        'name': 'pytest.test',
+        'columns': {
+            'chave': 'integer',
+            'desc': 'text',
+            'valor': 'float'}}
+    assert test_table_data(Table(f"{tbl.full_name}"))
     assert tbl.drop()
     assert not exists(tbl.location)
+
 
 def test_alter_table(tbl):
     """ Test table definition alterations """
