@@ -5,7 +5,7 @@
 
 Python module to manage **CSV** data like a DBMS application
 
-![logo](img/logo.png)
+![logo](https://raw.githubusercontent.com/Didone/csvms/main/img/logo.png)
 
 ## Installation
 
