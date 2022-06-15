@@ -12,6 +12,6 @@ class TableException(DefaultException):
 
 class ColumnException(DefaultException):
     """Base class for Column exceptions"""
-    
+
 class DataException(DefaultException):
     """Base class for Data exceptions"""
