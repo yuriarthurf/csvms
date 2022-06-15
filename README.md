@@ -37,7 +37,7 @@ The `Table` object represents a CSV data file.
 You can create a **sample** table like
 
 ```python
-from csvms.schema import Table
+from csvms.table import Table
 tbl = Table(
     name="sample",
     columns={
