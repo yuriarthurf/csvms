@@ -11,3 +11,4 @@ __pycache__
 # Temp files
 data/
 tmp.py
+tmp.ipynb
