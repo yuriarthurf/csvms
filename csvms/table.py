@@ -10,7 +10,7 @@ from typing import List, Dict
 # Local module
 from csvms import logger, DEFAULT_DB
 from csvms.schema import Database
-
+from csvms.exceptions import ColumnException, DataException, TableException
 # Supported data types
 dtypes = {
     "string":str,
@@ -41,7 +41,7 @@ class Table():
     FORMAT="csv" # Data file format
     CSVSEP=";"   # Separator
 
-    def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=None, temp:bool=False):
+    def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=list(), temp:bool=False):
         """Table representation and the data file using database location path to store all rows
         :param name: Table identifier composed by database name and the table name separated by '.'
                      If the database name was omitted, uses the default database instead
@@ -51,26 +51,17 @@ class Table():
                      Default 'False'
         """
         self.temporary = temp
-        self.header = False
         _db = DEFAULT_DB
         self.name = name
         if name.find('.') != -1:
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
+        self._rows = data
+        if exists(self.location):
+            self._rows = list(self.load())
         if self.columns is None:
-            self.header = True
-        self._rows = list()
-        if data is not None:
-            self._rows = data
-        else:
-            if exists(self.location):
-                self._rows = list(self.load(self.full_name))
-            elif not temp:
-                logger.debug("create:%s",self.location)
-                Path(self.location).touch()
-        if self.columns is None:
-            raise ValueError("Can't create table without columns")
+            raise TableException("Can't create table without columns")
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
@@ -105,19 +96,15 @@ class Table():
         """Return an tuple with 'None' values for each column"""
         return tuple([None for _ in self.columns])
 
-    def load(self, table:str) -> List[tuple]:
+    def load(self) -> List[tuple]:
         """Load csv file from path with column formats
-        :param table: Table full name
+        :param table_id: Table full name
         :return: Tuple iterator
         """
+        definition = self.database.catalog[self.full_name]
+        self.columns = {key:dtypes[value] for key, value in definition["columns"].items()}
         with open(self.location, mode='r', encoding="utf-8") as csv_file:
-            csv_reader = reader(csv_file, delimiter=Table.CSVSEP)
-            _head = self.header
-            for raw in csv_reader:
-                if _head:
-                    self.columns = {val:str for val in raw}
-                    _head = False
-                    continue
+            for raw in reader(csv_file, delimiter=Table.CSVSEP):
                 row = list()
                 for idx, col in enumerate(self.columns.values()):
                     row.append(col(raw[idx]))
@@ -125,14 +112,13 @@ class Table():
 
     def save(self) -> bool:
         """Write data to file system"""
+        if self.temporary:
+            raise TableException("Can't save temporary tables")
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
             csv_writer = writer(csv_file, delimiter=Table.CSVSEP, quotechar='"')
-            _head = self.header
             for row in self._rows:
-                if _head:
-                    _head = False
-                    csv_writer.writerow(tuple(self.columns.keys()))
                 csv_writer.writerow(row)
+        self.database.catalog[self.full_name] = self.definition
         return True
 
     def alter(self, option:str, column:Dict[str,type], new:Dict[str,type]=None) -> bool:
@@ -149,7 +135,7 @@ class Table():
                 return self._drop_column_(key)
             if option.upper() == "MODIFY":
                 if new is None:
-                    raise ValueError("Need to inform new column definition")
+                    raise ColumnException("Need to inform new column definition")
                 return self._modify_column_(key, new)
         return False
 
@@ -176,7 +162,7 @@ class Table():
                 del self.columns[column] # Remove from columns
                 break # exit from loop
         if idx is None:
-            raise ValueError(f"Column {column} not found")
+            raise ColumnException(f"Column {column} not found")
         for pos, row in enumerate(self._rows):
             row = list(row) # Convert to list
             del row[idx] # remove value for column index
@@ -205,9 +191,9 @@ class Table():
                 print(type(val(row[idx])))
                 self._rows[pos] = tuple(row) # Update row list
         except Exception as err:
-            logger.error(err)
+            logger.debug(err)
             self._rows = tmp_rows
-            raise ValueError(f"Cant change data type for column {name}")
+            raise ColumnException(f"Cant change data type for column {name}")
         return True
 
     def clean(self) -> bool:
@@ -222,6 +208,7 @@ class Table():
     def drop(self) -> bool:
         """Remove physical file"""
         remove(self.location)
+        del self.database.catalog[self.full_name]
         return True
 
     def show(self, size:int=10, trunc:bool=True) -> str:
@@ -284,10 +271,10 @@ class Table():
                 row += (val(value[idx]),)
             return row
         except IndexError as err:
-            logger.error(err)
+            logger.debug(err)
         except ValueError as err:
-            logger.error(err)
-        raise ValueError("Invalid data")
+            logger.debug(err)
+        raise DataException(f"Invalid data {value} to row {tuple(self.columns.values())}")
 
     def append(self, *values) -> bool:
         """Add new row
