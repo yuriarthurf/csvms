@@ -98,6 +98,16 @@ class Table():
         if self.columns is None:
             raise ValueError("Can't create table without columns")
 
+    @classmethod
+    def _condition_parser_(cls, exp:str) -> List[str]:
+        """Condition parser
+        :param exp: String with operation
+        :return: List with operation name and value
+        """
+        ops = '|'.join(operations.keys())
+        match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
+        return [match.group(1), match.group(2)]
+
     @property
     def full_name(self):
         """Return table full name identifier"""
@@ -292,39 +302,6 @@ class Table():
             return f"""{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
         return f"""{sep}\n{col}\n{sep}\n{sep}\n"""
 
-    @classmethod
-    def _condition_parser_(cls, exp:str) -> List[str]:
-        """Condition parser
-        :param exp: String with operation
-        :return: List with operation name and value
-        """
-        ops = '|'.join(operations.keys())
-        match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
-        return [match.group(1), match.group(2)]
-
-    def where(self, column:str, expression:str) -> List[tuple]:
-        """Return a subset of rows based on a condition
-        :param column: Identifier of the column where the expression will be apply
-        :param expression: A expression composed by the operation and value.
-                           See 'operations' dictionary to get the list of valid options
-        :return: List of tuple filtered by the expression
-
-        # Exemples
-        # Filter rows where column 'id' have value greater than '1'
-        > where("id", "gt 1")
-        >
-        # Filter rows where column 'name' have value equal to 'Peter'
-        > where("name", "eq 'Peter'")
-        """
-        empty = True
-        ops, val = Table._condition_parser_(expression)
-        for idx, row in enumerate(self):
-            if operations[ops](self[idx][column], eval(val)):
-                yield row
-                empty = False
-        if empty:
-            yield self.empty_row
-
     def _validade_(self, value) -> tuple:
         row = tuple()
         try:
@@ -389,19 +366,119 @@ class Table():
 
     # Relational Algebra operators
     def __add__(self, other:"Table") -> "Table":
-        """Union"""
+        """Union Operator"""
         return Table(
-            name = "union",
+            name = f"tmp.{self.name}U{other.name}",
             columns=self.columns,
             data= list(dict.fromkeys(self._rows+other._rows)),
             temp=True
         )
 
     def __mod__(self, other:"Table") -> "Table":
-        """Intersection"""
+        """Inserct Operator"""
         return Table(
-            name = "intersection",
+            name = f"tmp.{self.name}∩{other.name}",
             columns=self.columns,
             data=[r for r in self for o in other if r == o],
             temp=True
         )
+
+    def __mul__(self, other:"Table") -> "Table":
+        """Times Operator"""
+        columns = {f"{self.name}.{k}":v for k, v in self.columns.items()}
+        columns.update({f"{other.name}.{k}":v for k, v in other.columns.items()})
+        return Table(
+            name =  f"tmp.{self.name}x{other.name}",
+            columns=columns,
+            data=[r+o for r in self for o in other],
+            temp=True
+        )
+
+    def __truediv__(self, other:"Table") -> "Table":
+        """Divide Operator"""
+        return Table(
+            name =  f"tmp.{self.name}÷{other.name}",
+            columns={k:v for k, v in self.columns.items() if k not in other.columns.keys()},
+            data=list(),
+            temp=True
+        )
+
+    def __sub__(self, other:"Table") -> "Table":
+        """Minus Operator"""
+        rows = list()
+        for _r_ in self:
+            rows.append(_r_)
+            for _o_ in other:
+                if _r_ == _o_:
+                    rows.pop()
+        return Table(
+            name = f"tmp.{self.name}-{other.name}",
+            columns=self.columns,
+            data=rows,
+            temp=True
+        )
+
+    def __filter__(self, row:dict, ast:dict) -> bool:
+        """ Resolve where conditions recursively
+        :param ast: parsed where
+        :return: Boolean result
+        """
+        value = lambda v: row[v] if isinstance(v,str) and v in self.columns.keys() else v
+        if isinstance(ast, dict):
+            for key, val in ast.items():
+                if len(val)>2: # Multiple conditions with and/or
+                    return self.__filter__(row, {key:[val[-2],val[-1]]})
+                _x_, _y_ = val
+                if isinstance(_x_, dict):
+                    if _x_.get('literal') is None:
+                        _x_ = self.__filter__(row, _x_)
+                    else:
+                        _x_ = _x_['literal']
+                if isinstance(_y_, dict):
+                    if _y_.get('literal') is None:
+                        _y_ = self.__filter__(row, _y_)
+                    else:
+                        _y_ = _y_['literal']
+                return operations[key](value(_x_),value(_y_))
+
+    def π(self, columns:list) -> "Table":
+        """Projection Operator"""
+        cols = [(idx,key)for idx, key in enumerate(self.columns.keys()) if key in columns]
+        rows = list()
+        for row in self:
+            _r_ = tuple()
+            for idx,_ in cols:
+                _r_ += (row[idx],)
+            rows.append(_r_)
+        return Table(
+            name = f"tmp.{self.name}π",
+            columns={k:self.columns[k] for _,k in cols},
+            data=rows,
+            temp=True
+        )
+
+
+    def σ(self, condition:Dict[str,list]) -> "Table":
+        """Selection Operator
+        :param condition: A expression composed by the logic operation and list of values to compare.
+                          See 'operations' dictionary to get the list of valid options
+
+        # Exemples
+        # where id < 2
+        > where({'lt':['id',2]})
+        >
+        # where val = 'George' and id > 1
+        > where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})
+        """
+        return Table(
+            name = f"tmp.{self.name}σ",
+            columns=self.columns,
+            data=[r for i, r in enumerate(self) if self.__filter__(self[i], condition)],
+            temp=True
+        )
+
+    def ꝏ(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Join Operator"""
+        tbl = (self * other).σ(where)
+        tbl.name = f"{self.name}⋈{other.name}"
+        return tbl
