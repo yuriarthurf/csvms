@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "csvms"
-version = "0.1.4"
+version = "0.1.5"
 description = "Comma-separated values management system"
 authors = ["Didone <tiago.didone@compasso.com.br>"]
 readme = "README.md"
