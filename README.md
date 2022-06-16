@@ -17,10 +17,6 @@ pip install csvms
 
 You can use the `help` command in all objects to read the complete documentation
 
-### Catalog
-
-When you instantiate an object the Catalog objet will save the [table](#table) definitions for future queries and save in [json format](https://www.w3schools.com/whatis/whatis_json.asp) on root directory.
-
 ### Database
 
 This object represents a physical location on the file system with a set of [tables](#table)
@@ -62,6 +58,7 @@ Using `print` you can they see the object as a table representation
 
 ```python
 >>> print(tbl)
+   TABLE: default.sample
    +---+-----+---+
    |c1 |c2   |c3 |
    +---+-----+---+
@@ -117,6 +114,7 @@ You can add a new row using the `append` function
 ```python
 >>> tbl.append(3, "Some", 0)
 >>> print(tbl)
+   TABLE: default.sample
    +---+-----+---+
    |c1 |c2   |c3 |
    +---+-----+---+
@@ -131,6 +129,7 @@ Update a specific row by your **index**
 ```python
 >>> tbl[0] = (4, "Value", 3.3)
 >>> print(tbl)
+   TABLE: default.sample
    +---+-----+---+
    |c1 |c2   |c3 |
    +---+-----+---+
@@ -145,10 +144,28 @@ And also remove a row by the **index**
 ```python
 >>> del tbl[1]
 >>> print(tbl)
+   TABLE: default.sample
    +---+-----+---+
    |c1 |c2   |c3 |
    +---+-----+---+
   0|  4|Value|3.3|
   1|  3| Some|0.0|
    +---+-----+---+
+```
+
+### Catalog
+
+When you instantiate an object the Catalog objet will save the [table](#table) definitions for future queries and save in [json format](https://www.w3schools.com/whatis/whatis_json.asp) on root directory.
+
+```json
+{
+    "default.sample": {
+        "name": "default.sample",
+        "columns": {
+            "c1": "integer",
+            "c2": "text",
+            "c3": "float"
+        }
+    }
+}
 ```

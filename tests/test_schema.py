@@ -1,7 +1,7 @@
 """Catalog test cases"""
 from os.path import exists
+from os import environ
 import pytest
-from csvms import FILE_DIR
 from csvms.table import Table
 
 @pytest.fixture()
@@ -23,7 +23,7 @@ def tbl():
 
 def test_database(tbl):
     """Test database properties"""
-    assert str(tbl.database.location).startswith(str(FILE_DIR))
+    assert str(tbl.database.location).startswith(environ['CSVMS_FILE_DIR'])
     assert tbl.database.name == "pytest"
 
 def test_table_data(tbl):
