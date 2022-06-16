@@ -36,7 +36,14 @@ operations = {
     'missing':lambda   x:x is None,
     'exists' :lambda   x:x is not None,
 }
-
+# Supported functions
+functions = {
+    'add': lambda x,y: x+y,
+    'sub': lambda x,y: x-y,
+    'div': lambda x,y: x/y,
+    'mul': lambda x,y: x*y
+    #TODO: Concatenate strings
+}
 # Supported operations reverse
 strtypes = {value:key for key, value in dtypes.items()}
 
@@ -99,6 +106,15 @@ class Table():
     def empty_row(self) -> tuple:
         """Return an tuple with 'None' values for each column"""
         return tuple([None for _ in self.columns])
+
+    def _value_(self, row:tuple, key:str):
+        """Get valeu from row by column name if it's a columnn identifier
+        :param row: Row tuple
+        :param key: Column identifier
+        """
+        if key in self.columns.keys():
+            return row[key]
+        return key
 
     def load(self) -> List[tuple]:
         """Load csv file from path with column formats
@@ -387,11 +403,10 @@ class Table():
         :param ast: parsed where
         :return: Boolean result
         """
-        value = lambda v: row[v] if isinstance(v,str) and v in self.columns.keys() else v
         if isinstance(ast, dict):
             for key, val in ast.items():
                 if key in ['missing','exists']:
-                    return operations[key](value(val))
+                    return operations[key](self._value_(row,val))
                 if len(val)>2: # Multiple conditions with and/or
                     return self.__filter__(row, {key:[val[-2],val[-1]]})
                 _x_, _y_ = val
@@ -405,7 +420,8 @@ class Table():
                         _y_ = self.__filter__(row, _y_)
                     else:
                         _y_ = _y_['literal']
-                return operations[key](value(_x_),value(_y_))
+                return operations[key](self._value_(row,_x_),self._value_(row,_y_))
+        raise DataException(f"Can't evaluate expression: {ast}")
 
     def π(self, columns:list) -> "Table":
         """Projection Operator"""
@@ -452,4 +468,47 @@ class Table():
             name = f"tmp.{alias}",
             columns=self.columns,
             data=self,
+            temp=True)
+
+    def __extend__(self, row:dict, ast:dict):
+        """ Resolve functions recursively
+        :param ast: parsed expression
+        :return: Calculated value
+        """
+        if isinstance(ast, dict):
+            for key, val in ast.items():
+                _x_, _y_ = val
+                if isinstance(_x_, dict):
+                    if _x_.get('literal') is None:
+                        _x_ = self.__extend__(row, _x_)
+                    else:
+                        _x_ = _x_['literal']
+                if isinstance(_y_, dict):
+                    if _y_.get('literal') is None:
+                        _y_ = self.__extend__(row, _y_)
+                    else:
+                        _y_ = _y_['literal']
+                return functions[key](self._value_(row,_x_),self._value_(row,_y_))
+        raise DataException(f"Can't evaluate expression: {ast}")
+
+    def Π(self, extend:dict, alias:str=None) -> "Table":
+        """Extended projection Operator"""
+        rows = list()
+        dtype = None
+        for idx, row in enumerate(self):
+            val = self.__extend__(self[idx],extend)
+            if dtype is None:
+                dtype = type(val)
+            elif dtype != type(val):
+                raise DataException(f"{type(val)} error")
+            rows.append(row + (val,))
+        cols = {k:v for k,v in self.columns.items()}
+        if alias is None:
+            cols[f"{str(extend).replace(' ','').replace('.',',')}"]=dtype
+        else:
+            cols[alias]=dtype
+        return Table(
+            name = f"tmp.{self.name}",
+            columns=cols,
+            data=rows,
             temp=True)
