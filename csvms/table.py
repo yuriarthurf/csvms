@@ -5,10 +5,7 @@ from csv import reader, writer
 from os import remove
 from os.path import exists
 from pathlib import Path
-from tabnanny import check
 from typing import List, Dict
-
-from pyparsing import col
 
 # Local module
 from csvms import logger, DEFAULT_DB
@@ -46,8 +43,8 @@ functions = {
     'add': lambda x,y: None if x is None or y is None else x+y,
     'sub': lambda x,y: None if x is None or y is None else x-y,
     'div': lambda x,y: None if x is None or y is None else x/y,
-    'mul': lambda x,y: None if x is None or y is None else x*y
-    #TODO: Concatenate strings
+    'mul': lambda x,y: None if x is None or y is None else x*y,
+    'concat': NotImplemented #TODO: Create a new function to CONCATENATE strings
 }
 # Supported operations reverse
 strtypes = {value:key for key, value in dtypes.items()}
@@ -248,12 +245,12 @@ class Table():
         idx_pad = 3
         # Max size of each column
         col_size = dict()
-        for col in self.columns:
-            col_size[col]=len(col)+1
+        for _c_ in self.columns:
+            col_size[_c_]=len(_c_)+1
             for idx, _ in enumerate(self):
-                cols = len(str(self[idx][col]))
-                if col_size[col] < cols:
-                    col_size[col]= cols
+                cols = len(str(self[idx][_c_]))
+                if col_size[_c_] < cols:
+                    col_size[_c_]= cols
         # Table line separator
         sep = f"{' ':{'>'}{idx_pad}}+"
         for key in self.columns.keys():
@@ -543,6 +540,5 @@ class Table():
         emp = Table("tmp.left",{k:v for k,v in self.columns.items()},[self.empty_row])
         return tbl + (emp * out)
 
-    def full(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Full outer Operator"""
-        return self.left(other,where) + self.right(other,where)
+#TODO: Implement DIVIDEBY operator
+#TODO: Implement the FULL join operator
