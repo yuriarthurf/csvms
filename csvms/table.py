@@ -5,6 +5,7 @@ from csv import reader, writer
 from os import remove
 from os.path import exists
 from pathlib import Path
+from tabnanny import check
 from typing import List, Dict
 
 from pyparsing import col
@@ -22,28 +23,30 @@ dtypes = {
     "integer":int,
     "float":float
 }
+# Check for None values
+NaN = lambda z:False if z is None else z
 # Supported operations
 operations = {
-    'lt'     :lambda x,y:x < y,
-    'gt'     :lambda x,y:x > y,
-    'eq'     :lambda x,y:x == y,
-    'lte'    :lambda x,y:x <= y,
-    'gte'    :lambda x,y:x >= y,
-    'neq'    :lambda x,y:x != y,
-    'is'     :lambda x,y:x is y,
-    'in'     :lambda x,y:x in y,
-    'nin'    :lambda x,y:x not in y,
-    'or'     :lambda x,y:x or y,
-    'and'    :lambda x,y:x and y,
+    'lt'     :lambda x,y:NaN(x) < NaN(y),
+    'gt'     :lambda x,y:NaN(x) > NaN(y),
+    'eq'     :lambda x,y:NaN(x) == NaN(y),
+    'lte'    :lambda x,y:NaN(x) <= NaN(y),
+    'gte'    :lambda x,y:NaN(x) >= NaN(y),
+    'neq'    :lambda x,y:NaN(x) != NaN(y),
+    'is'     :lambda x,y:NaN(x) is NaN(y),
+    'in'     :lambda x,y:NaN(x) in NaN(y),
+    'nin'    :lambda x,y:NaN(x) not in NaN(y),
+    'or'     :lambda x,y:NaN(x) or NaN(y),
+    'and'    :lambda x,y:NaN(x) and NaN(y),
     'missing':lambda   x:x is None,
     'exists' :lambda   x:x is not None,
 }
 # Supported functions
 functions = {
-    'add': lambda x,y: x+y,
-    'sub': lambda x,y: x-y,
-    'div': lambda x,y: x/y,
-    'mul': lambda x,y: x*y
+    'add': lambda x,y: None if x is None or y is None else x+y,
+    'sub': lambda x,y: None if x is None or y is None else x-y,
+    'div': lambda x,y: None if x is None or y is None else x/y,
+    'mul': lambda x,y: None if x is None or y is None else x*y
     #TODO: Concatenate strings
 }
 # Supported operations reverse
@@ -476,9 +479,10 @@ class Table():
 
     def ρ(self, alias:str) -> "Table":
         """Rename Operator"""
+        rnm = lambda x: x if x.count('.')==0 else x.split('.')[-1]
         return Table(
-            name = f"tmp.{alias}",
-            columns={k:v for k,v in self.columns.items()},
+            name = f"{alias}",
+            columns={rnm(k):v for k,v in self.columns.items()},
             data=[r for r in self],
             temp=True)
 
@@ -511,7 +515,7 @@ class Table():
             val = self.__extend__(self[idx],extend)
             if dtype is None:
                 dtype = type(val)
-            elif dtype != type(val):
+            elif dtype != type(val) and val is not None:
                 raise DataException(f"{type(val)} error")
             rows.append(row + (val,))
         cols = {k:v for k,v in self.columns.items()}
@@ -525,9 +529,20 @@ class Table():
             data=rows,
             temp=True)
 
-    def outer(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Outer Operator"""
+    def left(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Left outer Operator"""
         tbl = (self * other).σ(where)
         out = self - tbl.π([f"{self.name}.{k}"for k in self.columns.keys()])
-        emp = Table("tmp.out",{k:v for k,v in other.columns.items()},[other.empty_row])
+        emp = Table("tmp.left",{k:v for k,v in other.columns.items()},[other.empty_row])
         return tbl + (out * emp)
+
+    def right(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Right outer Operator"""
+        tbl = (self * other).σ(where)
+        out = other - tbl.π([f"{other.name}.{k}"for k in other.columns.keys()])
+        emp = Table("tmp.left",{k:v for k,v in self.columns.items()},[self.empty_row])
+        return tbl + (emp * out)
+
+    def full(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Full outer Operator"""
+        return self.left(other,where) + self.right(other,where)
