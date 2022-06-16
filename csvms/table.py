@@ -8,9 +8,11 @@ from pathlib import Path
 from typing import List, Dict
 
 # Local module
-from csvms import logger, DEFAULT_DB
+from csvms import logger
 from csvms.schema import Database
-from csvms.exceptions import ColumnException, DataException, TableException
+from csvms.exceptions import ColumnException
+from csvms.exceptions import DataException
+from csvms.exceptions import TableException
 # Supported data types
 dtypes = {
     "string":str,
@@ -54,7 +56,7 @@ class Table():
     FORMAT="csv" # Data file format
     CSVSEP=";"   # Separator
 
-    def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=list(), temp:bool=False):
+    def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=None, temp:bool=False):
         """Table representation and the data file using database location path to store all rows
         :param name: Table identifier composed by database name and the table name separated by '.'
                      If the database name was omitted, uses the default database instead
@@ -63,8 +65,10 @@ class Table():
         :param temp: If 'False' create datafile, other else the rows will be available only on python memory.
                      Default 'False'
         """
+        if data is None:
+            data = list()
         self.temporary = temp
-        _db = DEFAULT_DB
+        _db = None
         self.name = name
         if name.count('.') == 1:
             _db, self.name = name.split('.')
