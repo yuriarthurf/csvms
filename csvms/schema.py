@@ -2,20 +2,22 @@
 from pathlib import Path
 from os import makedirs
 # Local module
-from csvms import logger, FILE_DIR
+from csvms import logger, FILE_DIR, DEFAULT_DB
 from csvms.catalog import Catalog
 
 class Database():
     """The database is an file system directory
        Used to store table data files on the local file system"""
 
-    def __init__(self, name:str, temp=False) -> "Database":
+    def __init__(self, name:str=None, temp=False) -> "Database":
         """Database representation
-        :param name: Database identifier
+        :param name: Database identifier. If 'None' use default name. Default is None
         :param temp: If false, create directory. Default False
         """
         self.catalog = Catalog()
         self.name = name
+        if name is None:
+            self.name = DEFAULT_DB
         self.location = str()
         if not temp:
             self.location = Database.create_location(name)
