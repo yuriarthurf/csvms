@@ -445,3 +445,11 @@ class Table():
         tbl = (self * other).σ(where)
         tbl.name = f"{self.name}⋈{other.name}"
         return tbl
+
+    def ρ(self, alias:str) -> "Table":
+        """Rename Operator"""
+        return Table(
+            name = f"tmp.{alias}",
+            columns=self.columns,
+            data=self,
+            temp=True)
