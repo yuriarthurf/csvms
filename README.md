@@ -17,9 +17,13 @@ pip install csvms
 
 You can use the `help` command in all objects to read the complete documentation
 
+### Catalog
+
+When you instantiate an object the Catalog objet will save the [table](#table) definitions for future queries and save in [json format](https://www.w3schools.com/whatis/whatis_json.asp) on root directory.
+
 ### Database
 
-This object represents a physical location on the file system with a set of [Tables](#table)
+This object represents a physical location on the file system with a set of [tables](#table)
 
 ```python
 from csvms.schema import Database
