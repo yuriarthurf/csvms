@@ -7,7 +7,7 @@ readme = "README.md"
 license = "MIT"
 homepage = "https://github.com/Didone/csvms"
 repository = "https://github.com/Didone/csvms.git"
-keywords = ["bootcamp","sql","csv","sgbd","dbms"]
+keywords = ["bootcamp","csv","dbms","database","relational-algebra"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
