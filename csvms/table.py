@@ -7,6 +7,8 @@ from os.path import exists
 from pathlib import Path
 from typing import List, Dict
 
+from pyparsing import col
+
 # Local module
 from csvms import logger, DEFAULT_DB
 from csvms.schema import Database
@@ -64,7 +66,7 @@ class Table():
         self.temporary = temp
         _db = DEFAULT_DB
         self.name = name
-        if name.find('.') != -1:
+        if name.count('.') == 1:
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
@@ -83,6 +85,13 @@ class Table():
         ops = '|'.join(operations.keys())
         match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
         return [match.group(1), match.group(2)]
+
+    @classmethod
+    def _rename_(cls, left:"Table", rigth:"Table"=None) -> str:
+        name = left.name
+        if left.name.count('#') == 0 and rigth is not None:
+            name = f"({left.name}#{rigth.name})"
+        return name
 
     @property
     def full_name(self):
@@ -280,9 +289,10 @@ class Table():
                 for key, val in self[_idx].items():
                     rows += f"{str(val):{'>'}{col_size[key]}}|"
                 rows+='\n'
+        tbl = f"{' ':{'>'}{idx_pad}}TABLE: {self.full_name}\n"
         if len(rows)>0:
-            return f"""{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
-        return f"""{sep}\n{col}\n{sep}\n{sep}\n"""
+            return f"""{tbl}{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
+        return f"""{tbl}{sep}\n{col}\n{sep}\n{sep}\n"""
 
     def _validade_(self, value) -> tuple:
         row = tuple()
@@ -353,25 +363,27 @@ class Table():
     def __add__(self, other:"Table") -> "Table":
         """Union Operator"""
         return Table(
-            name = f"tmp.{self.name}U{other.name}",
-            columns=self.columns,
+            name = Table._rename_(self,other),
+            columns={k:v for k,v in self.columns.items()},
             data= list(dict.fromkeys(self._rows+other._rows)),
             temp=True)
 
     def __mod__(self, other:"Table") -> "Table":
         """Inserct Operator"""
         return Table(
-            name = f"tmp.{self.name}∩{other.name}",
-            columns=self.columns,
+            name = Table._rename_(self,other),
+            columns={k:v for k,v in self.columns.items()},
             data=[r for r in self for o in other if r == o],
             temp=True)
 
     def __mul__(self, other:"Table") -> "Table":
         """Times Operator"""
-        columns = {f"{self.name}.{k}":v for k, v in self.columns.items()}
-        columns.update({f"{other.name}.{k}":v for k, v in other.columns.items()})
+        columns = {k:v for k, v in self.columns.items()}
+        if "." not in self.name:
+            columns = {f"{self.name}.{k}":v for k, v in self.columns.items()}
+            columns.update({f"{other.name}.{k}":v for k, v in other.columns.items()})
         return Table(
-            name =  f"tmp.{self.name}x{other.name}",
+            name = Table._rename_(self,other),
             columns=columns,
             data=[r+o for r in self for o in other],
             temp=True)
@@ -379,7 +391,7 @@ class Table():
     def __truediv__(self, other:"Table") -> "Table":
         """Divide Operator"""
         return Table(
-            name =  f"tmp.{self.name}÷{other.name}",
+            name = Table._rename_(self,other),
             columns={k:v for k, v in self.columns.items() if k not in other.columns.keys()},
             data=list(),
             temp=True)
@@ -393,8 +405,8 @@ class Table():
                 if _r_ == _o_:
                     rows.pop()
         return Table(
-            name = f"tmp.{self.name}-{other.name}",
-            columns=self.columns,
+            name = Table._rename_(self,other),
+            columns={k:v for k,v in self.columns.items()},
             data=rows,
             temp=True)
 
@@ -433,7 +445,7 @@ class Table():
                 _r_ += (row[idx],)
             rows.append(_r_)
         return Table(
-            name = f"tmp.{self.name}π",
+            name = Table._rename_(self),
             columns={k:self.columns[k] for _,k in cols},
             data=rows,
             temp=True)
@@ -451,23 +463,23 @@ class Table():
         > where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})
         """
         return Table(
-            name = f"tmp.{self.name}σ",
-            columns=self.columns,
+            name = Table._rename_(self),
+            columns={k:v for k,v in self.columns.items()},
             data=[r for i, r in enumerate(self) if self.__filter__(self[i], condition)],
             temp=True)
 
     def ꝏ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator"""
         tbl = (self * other).σ(where)
-        tbl.name = f"{self.name}⋈{other.name}"
+        tbl.name = Table._rename_(self,other)
         return tbl
 
     def ρ(self, alias:str) -> "Table":
         """Rename Operator"""
         return Table(
             name = f"tmp.{alias}",
-            columns=self.columns,
-            data=self,
+            columns={k:v for k,v in self.columns.items()},
+            data=[r for r in self],
             temp=True)
 
     def __extend__(self, row:dict, ast:dict):
@@ -508,7 +520,14 @@ class Table():
         else:
             cols[alias]=dtype
         return Table(
-            name = f"tmp.{self.name}",
+            name = Table._rename_(self),
             columns=cols,
             data=rows,
             temp=True)
+
+    def outer(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Outer Operator"""
+        tbl = (self * other).σ(where)
+        out = self - tbl.π([f"{self.name}.{k}"for k in self.columns.keys()])
+        emp = Table("tmp.out",{k:v for k,v in other.columns.items()},[other.empty_row])
+        return tbl + (out * emp)
