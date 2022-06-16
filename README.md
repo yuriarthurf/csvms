@@ -170,9 +170,11 @@ When you instantiate an object the Catalog objet will save the [table](#table) d
 }
 ```
 
-### Relational algebra operators
+### Relational algebra
 
+The main purpose of the relational algebra is to define operators that transform one or more input relations to an output relation. Given that these operators accept relations as input and produce relations as output, they can be combined and used to express potentially complex queries that transform potentially many input relations (whose data are stored in the database) into a single output relation (the query results).
 
+This are the current operations supported:
 
 |Simbolo|Oprador |Operação |Sintaxe|
 |---|--------|---------|-------|
