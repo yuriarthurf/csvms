@@ -46,8 +46,10 @@ functions = {
     'sub': lambda x,y: None if x is None or y is None else x-y,
     'div': lambda x,y: None if x is None or y is None else x/y,
     'mul': lambda x,y: None if x is None or y is None else x*y,
-    'concat': NotImplemented #TODO: Create a new function to CONCATENATE strings
-}
+    'concat': NotImplemented} #TODO: Create a new function to CONCATENATE strings
+# All logical operations are also supported as function
+functions.update(operations)
+
 # Supported operations reverse
 strtypes = {value:key for key, value in dtypes.items()}
 
@@ -363,6 +365,52 @@ class Table():
         """Pretty table format"""
         return self.show()
 
+    def _extend_(self, row:dict, ast:dict):
+        """ Resolve functions recursively
+        :param ast: parsed expression
+        :return: Calculated value
+        """
+        if isinstance(ast, dict):
+            for key, val in ast.items():
+                _x_, _y_ = val
+                if isinstance(_x_, dict):
+                    if _x_.get('literal') is None:
+                        _x_ = self._extend_(row, _x_)
+                    else:
+                        _x_ = _x_['literal']
+                if isinstance(_y_, dict):
+                    if _y_.get('literal') is None:
+                        _y_ = self._extend_(row, _y_)
+                    else:
+                        _y_ = _y_['literal']
+                return functions[key](self._value_(row,_x_),self._value_(row,_y_))
+        raise DataException(f"Can't evaluate expression: {ast}")
+
+    def _filter_(self, row:dict, ast:dict) -> bool:
+        """ Resolve where conditions recursively
+        :param ast: parsed where
+        :return: Boolean result
+        """
+        if isinstance(ast, dict):
+            for key, val in ast.items():
+                if key in ['missing','exists']:
+                    return operations[key](self._value_(row,val))
+                if len(val)>2: # Multiple conditions with and/or
+                    return self._filter_(row, {key:[val[-2],val[-1]]})
+                _x_, _y_ = val
+                if isinstance(_x_, dict):
+                    if _x_.get('literal') is None:
+                        _x_ = self._filter_(row, _x_)
+                    else:
+                        _x_ = _x_['literal']
+                if isinstance(_y_, dict):
+                    if _y_.get('literal') is None:
+                        _y_ = self._filter_(row, _y_)
+                    else:
+                        _y_ = _y_['literal']
+                return operations[key](self._value_(row,_x_),self._value_(row,_y_))
+        raise DataException(f"Can't evaluate expression: {ast}")
+
     # Relational Algebra operators
     def __add__(self, other:"Table") -> "Table":
         """Union Operator"""
@@ -414,31 +462,6 @@ class Table():
             data=rows,
             temp=True)
 
-    def __filter__(self, row:dict, ast:dict) -> bool:
-        """ Resolve where conditions recursively
-        :param ast: parsed where
-        :return: Boolean result
-        """
-        if isinstance(ast, dict):
-            for key, val in ast.items():
-                if key in ['missing','exists']:
-                    return operations[key](self._value_(row,val))
-                if len(val)>2: # Multiple conditions with and/or
-                    return self.__filter__(row, {key:[val[-2],val[-1]]})
-                _x_, _y_ = val
-                if isinstance(_x_, dict):
-                    if _x_.get('literal') is None:
-                        _x_ = self.__filter__(row, _x_)
-                    else:
-                        _x_ = _x_['literal']
-                if isinstance(_y_, dict):
-                    if _y_.get('literal') is None:
-                        _y_ = self.__filter__(row, _y_)
-                    else:
-                        _y_ = _y_['literal']
-                return operations[key](self._value_(row,_x_),self._value_(row,_y_))
-        raise DataException(f"Can't evaluate expression: {ast}")
-
     def π(self, columns:list) -> "Table":
         """Projection Operator"""
         cols = [(idx,key)for idx, key in enumerate(self.columns.keys()) if key in columns]
@@ -469,10 +492,10 @@ class Table():
         return Table(
             name = Table._rename_(self),
             columns={k:v for k,v in self.columns.items()},
-            data=[r for i, r in enumerate(self) if self.__filter__(self[i], condition)],
+            data=[r for i, r in enumerate(self) if self._filter_(self[i], condition)],
             temp=True)
 
-    def ꝏ(self, other:"Table", where:Dict[str,list]) -> "Table":
+    def ᐅᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator"""
         tbl = (self * other).σ(where)
         tbl.name = Table._rename_(self,other)
@@ -487,33 +510,12 @@ class Table():
             data=[r for r in self],
             temp=True)
 
-    def __extend__(self, row:dict, ast:dict):
-        """ Resolve functions recursively
-        :param ast: parsed expression
-        :return: Calculated value
-        """
-        if isinstance(ast, dict):
-            for key, val in ast.items():
-                _x_, _y_ = val
-                if isinstance(_x_, dict):
-                    if _x_.get('literal') is None:
-                        _x_ = self.__extend__(row, _x_)
-                    else:
-                        _x_ = _x_['literal']
-                if isinstance(_y_, dict):
-                    if _y_.get('literal') is None:
-                        _y_ = self.__extend__(row, _y_)
-                    else:
-                        _y_ = _y_['literal']
-                return functions[key](self._value_(row,_x_),self._value_(row,_y_))
-        raise DataException(f"Can't evaluate expression: {ast}")
-
     def Π(self, extend:dict, alias:str=None) -> "Table":
         """Extended projection Operator"""
         rows = list()
         dtype = None
         for idx, row in enumerate(self):
-            val = self.__extend__(self[idx],extend)
+            val = self._extend_(self[idx],extend)
             if dtype is None:
                 dtype = type(val)
             elif dtype != type(val) and val is not None:
@@ -530,14 +532,14 @@ class Table():
             data=rows,
             temp=True)
 
-    def left(self, other:"Table", where:Dict[str,list]) -> "Table":
+    def ᐅᐸ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Left outer Operator"""
         tbl = (self * other).σ(where)
         out = self - tbl.π([f"{self.name}.{k}"for k in self.columns.keys()])
         emp = Table("tmp.left",{k:v for k,v in other.columns.items()},[other.empty_row])
         return tbl + (out * emp)
 
-    def right(self, other:"Table", where:Dict[str,list]) -> "Table":
+    def ᐳᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Right outer Operator"""
         tbl = (self * other).σ(where)
         out = other - tbl.π([f"{other.name}.{k}"for k in other.columns.keys()])
@@ -545,4 +547,5 @@ class Table():
         return tbl + (emp * out)
 
 #TODO: Implement DIVIDEBY operator
-#TODO: Implement the FULL join operator
+#TODO: Implement the FULL join operator `ᐳᐸ`
+

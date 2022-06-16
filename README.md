@@ -169,3 +169,21 @@ When you instantiate an object the Catalog objet will save the [table](#table) d
     }
 }
 ```
+
+### Relational algebra operators
+
+
+
+|Simbolo|Oprador |Operação |Sintaxe|
+|---|--------|---------|-------|
+|**σ**|σ|Select|A.σ([`<logic functions>`])|
+|**π**|π|Project|A.π(`<attribute list>`)|
+|**∪**|+|Union|A + B|
+|**∩**|%|Intersection|A % B|
+|**-**|-|Difference|A – B|
+|**X**| * |Product|A * B|
+|**⋈**|ᐅᐊ|Join|A.ᐅᐊ( B, `<logic functions>` )|
+|**ρ**|ρ|Rename|A.ρ(`name`)|
+|**Π**|Π|Extend|A.Π(`<arithmetic functions>`)|
+|**⟕**|ᐅᐸ|Left Outer Join|A.ᐅᐸ( B, `<logic functions>` )|
+|**⟖**|ᐳᐊ|Right Outer Join|A.ᐳᐊ( B, `<logic functions>` )|
