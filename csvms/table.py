@@ -5,7 +5,10 @@ from csv import reader, writer
 from os import remove
 from os.path import exists
 from pathlib import Path
+from tabnanny import check
 from typing import List, Dict
+
+from pyparsing import col
 
 # Local module
 from csvms import logger, DEFAULT_DB
@@ -20,23 +23,32 @@ dtypes = {
     "integer":int,
     "float":float
 }
+# Check for None values
+NaN = lambda z:False if z is None else z
 # Supported operations
 operations = {
-    'lt'     :lambda x,y:x < y,
-    'gt'     :lambda x,y:x > y,
-    'eq'     :lambda x,y:x == y,
-    'lte'    :lambda x,y:x <= y,
-    'gte'    :lambda x,y:x >= y,
-    'neq'    :lambda x,y:x != y,
-    'is'     :lambda x,y:x is y,
-    'in'     :lambda x,y:x in y,
-    'nin'    :lambda x,y:x not in y,
-    'or'     :lambda x,y:x or y,
-    'and'    :lambda x,y:x and y,
+    'lt'     :lambda x,y:NaN(x) < NaN(y),
+    'gt'     :lambda x,y:NaN(x) > NaN(y),
+    'eq'     :lambda x,y:NaN(x) == NaN(y),
+    'lte'    :lambda x,y:NaN(x) <= NaN(y),
+    'gte'    :lambda x,y:NaN(x) >= NaN(y),
+    'neq'    :lambda x,y:NaN(x) != NaN(y),
+    'is'     :lambda x,y:NaN(x) is NaN(y),
+    'in'     :lambda x,y:NaN(x) in NaN(y),
+    'nin'    :lambda x,y:NaN(x) not in NaN(y),
+    'or'     :lambda x,y:NaN(x) or NaN(y),
+    'and'    :lambda x,y:NaN(x) and NaN(y),
     'missing':lambda   x:x is None,
     'exists' :lambda   x:x is not None,
 }
-
+# Supported functions
+functions = {
+    'add': lambda x,y: None if x is None or y is None else x+y,
+    'sub': lambda x,y: None if x is None or y is None else x-y,
+    'div': lambda x,y: None if x is None or y is None else x/y,
+    'mul': lambda x,y: None if x is None or y is None else x*y
+    #TODO: Concatenate strings
+}
 # Supported operations reverse
 strtypes = {value:key for key, value in dtypes.items()}
 
@@ -57,7 +69,7 @@ class Table():
         self.temporary = temp
         _db = DEFAULT_DB
         self.name = name
-        if name.find('.') != -1:
+        if name.count('.') == 1:
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
@@ -76,6 +88,13 @@ class Table():
         ops = '|'.join(operations.keys())
         match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
         return [match.group(1), match.group(2)]
+
+    @classmethod
+    def _rename_(cls, left:"Table", rigth:"Table"=None) -> str:
+        name = left.name
+        if left.name.count('#') == 0 and rigth is not None:
+            name = f"({left.name}#{rigth.name})"
+        return name
 
     @property
     def full_name(self):
@@ -99,6 +118,15 @@ class Table():
     def empty_row(self) -> tuple:
         """Return an tuple with 'None' values for each column"""
         return tuple([None for _ in self.columns])
+
+    def _value_(self, row:tuple, key:str):
+        """Get valeu from row by column name if it's a columnn identifier
+        :param row: Row tuple
+        :param key: Column identifier
+        """
+        if key in self.columns.keys():
+            return row[key]
+        return key
 
     def load(self) -> List[tuple]:
         """Load csv file from path with column formats
@@ -264,9 +292,10 @@ class Table():
                 for key, val in self[_idx].items():
                     rows += f"{str(val):{'>'}{col_size[key]}}|"
                 rows+='\n'
+        tbl = f"{' ':{'>'}{idx_pad}}TABLE: {self.full_name}\n"
         if len(rows)>0:
-            return f"""{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
-        return f"""{sep}\n{col}\n{sep}\n{sep}\n"""
+            return f"""{tbl}{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
+        return f"""{tbl}{sep}\n{col}\n{sep}\n{sep}\n"""
 
     def _validade_(self, value) -> tuple:
         row = tuple()
@@ -337,25 +366,27 @@ class Table():
     def __add__(self, other:"Table") -> "Table":
         """Union Operator"""
         return Table(
-            name = f"tmp.{self.name}U{other.name}",
-            columns=self.columns,
+            name = Table._rename_(self,other),
+            columns={k:v for k,v in self.columns.items()},
             data= list(dict.fromkeys(self._rows+other._rows)),
             temp=True)
 
     def __mod__(self, other:"Table") -> "Table":
         """Inserct Operator"""
         return Table(
-            name = f"tmp.{self.name}∩{other.name}",
-            columns=self.columns,
+            name = Table._rename_(self,other),
+            columns={k:v for k,v in self.columns.items()},
             data=[r for r in self for o in other if r == o],
             temp=True)
 
     def __mul__(self, other:"Table") -> "Table":
         """Times Operator"""
-        columns = {f"{self.name}.{k}":v for k, v in self.columns.items()}
-        columns.update({f"{other.name}.{k}":v for k, v in other.columns.items()})
+        columns = {k:v for k, v in self.columns.items()}
+        if "." not in self.name:
+            columns = {f"{self.name}.{k}":v for k, v in self.columns.items()}
+            columns.update({f"{other.name}.{k}":v for k, v in other.columns.items()})
         return Table(
-            name =  f"tmp.{self.name}x{other.name}",
+            name = Table._rename_(self,other),
             columns=columns,
             data=[r+o for r in self for o in other],
             temp=True)
@@ -363,7 +394,7 @@ class Table():
     def __truediv__(self, other:"Table") -> "Table":
         """Divide Operator"""
         return Table(
-            name =  f"tmp.{self.name}÷{other.name}",
+            name = Table._rename_(self,other),
             columns={k:v for k, v in self.columns.items() if k not in other.columns.keys()},
             data=list(),
             temp=True)
@@ -377,8 +408,8 @@ class Table():
                 if _r_ == _o_:
                     rows.pop()
         return Table(
-            name = f"tmp.{self.name}-{other.name}",
-            columns=self.columns,
+            name = Table._rename_(self,other),
+            columns={k:v for k,v in self.columns.items()},
             data=rows,
             temp=True)
 
@@ -387,11 +418,10 @@ class Table():
         :param ast: parsed where
         :return: Boolean result
         """
-        value = lambda v: row[v] if isinstance(v,str) and v in self.columns.keys() else v
         if isinstance(ast, dict):
             for key, val in ast.items():
                 if key in ['missing','exists']:
-                    return operations[key](value(val))
+                    return operations[key](self._value_(row,val))
                 if len(val)>2: # Multiple conditions with and/or
                     return self.__filter__(row, {key:[val[-2],val[-1]]})
                 _x_, _y_ = val
@@ -405,7 +435,8 @@ class Table():
                         _y_ = self.__filter__(row, _y_)
                     else:
                         _y_ = _y_['literal']
-                return operations[key](value(_x_),value(_y_))
+                return operations[key](self._value_(row,_x_),self._value_(row,_y_))
+        raise DataException(f"Can't evaluate expression: {ast}")
 
     def π(self, columns:list) -> "Table":
         """Projection Operator"""
@@ -417,7 +448,7 @@ class Table():
                 _r_ += (row[idx],)
             rows.append(_r_)
         return Table(
-            name = f"tmp.{self.name}π",
+            name = Table._rename_(self),
             columns={k:self.columns[k] for _,k in cols},
             data=rows,
             temp=True)
@@ -435,13 +466,83 @@ class Table():
         > where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})
         """
         return Table(
-            name = f"tmp.{self.name}σ",
-            columns=self.columns,
+            name = Table._rename_(self),
+            columns={k:v for k,v in self.columns.items()},
             data=[r for i, r in enumerate(self) if self.__filter__(self[i], condition)],
             temp=True)
 
     def ꝏ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator"""
         tbl = (self * other).σ(where)
-        tbl.name = f"{self.name}⋈{other.name}"
+        tbl.name = Table._rename_(self,other)
         return tbl
+
+    def ρ(self, alias:str) -> "Table":
+        """Rename Operator"""
+        rnm = lambda x: x if x.count('.')==0 else x.split('.')[-1]
+        return Table(
+            name = f"{alias}",
+            columns={rnm(k):v for k,v in self.columns.items()},
+            data=[r for r in self],
+            temp=True)
+
+    def __extend__(self, row:dict, ast:dict):
+        """ Resolve functions recursively
+        :param ast: parsed expression
+        :return: Calculated value
+        """
+        if isinstance(ast, dict):
+            for key, val in ast.items():
+                _x_, _y_ = val
+                if isinstance(_x_, dict):
+                    if _x_.get('literal') is None:
+                        _x_ = self.__extend__(row, _x_)
+                    else:
+                        _x_ = _x_['literal']
+                if isinstance(_y_, dict):
+                    if _y_.get('literal') is None:
+                        _y_ = self.__extend__(row, _y_)
+                    else:
+                        _y_ = _y_['literal']
+                return functions[key](self._value_(row,_x_),self._value_(row,_y_))
+        raise DataException(f"Can't evaluate expression: {ast}")
+
+    def Π(self, extend:dict, alias:str=None) -> "Table":
+        """Extended projection Operator"""
+        rows = list()
+        dtype = None
+        for idx, row in enumerate(self):
+            val = self.__extend__(self[idx],extend)
+            if dtype is None:
+                dtype = type(val)
+            elif dtype != type(val) and val is not None:
+                raise DataException(f"{type(val)} error")
+            rows.append(row + (val,))
+        cols = {k:v for k,v in self.columns.items()}
+        if alias is None:
+            cols[f"{str(extend).replace(' ','').replace('.',',')}"]=dtype
+        else:
+            cols[alias]=dtype
+        return Table(
+            name = Table._rename_(self),
+            columns=cols,
+            data=rows,
+            temp=True)
+
+    def left(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Left outer Operator"""
+        tbl = (self * other).σ(where)
+        out = self - tbl.π([f"{self.name}.{k}"for k in self.columns.keys()])
+        emp = Table("tmp.left",{k:v for k,v in other.columns.items()},[other.empty_row])
+        return tbl + (out * emp)
+
+    def right(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Right outer Operator"""
+        tbl = (self * other).σ(where)
+        out = other - tbl.π([f"{other.name}.{k}"for k in other.columns.keys()])
+        emp = Table("tmp.left",{k:v for k,v in self.columns.items()},[self.empty_row])
+        return tbl + (emp * out)
+
+    def full(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Full outer Operator"""
+        return self.left(other,where) + self.right(other,where)
