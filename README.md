@@ -1,9 +1,12 @@
 # **C**omma-**S**eparated **V**alues **M**anagement **S**ystem
 
 
-[![PyPI](https://img.shields.io/pypi/v/csvms)](https://pypi.org/project/csvms/) ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/csvms)
+[![PyPI](https://img.shields.io/pypi/v/csvms)](https://pypi.org/project/csvms/) 
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/csvms) 
+![GitHub](https://img.shields.io/github/license/Didone/csvms)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/Didone/csvms/Python%20package)
 
-Python module to manage **CSV** data like a DBMS application
+Python module to manage [CSV](https://en.wikipedia.org/wiki/Comma-separated_values) data like a [DBMS](https://en.wikipedia.org/wiki/Database#Database_management_system) application with educational purposes
 
 ![logo](https://raw.githubusercontent.com/Didone/csvms/main/img/logo.png)
 
@@ -15,20 +18,35 @@ pip install csvms
 
 ## Usage
 
-You can use the `help` command in all objects to read the complete documentation
-
-### Database
-
-This object represents a physical location on the file system with a set of [tables](#table)
+This is an simple example of use:
 
 ```python
-from csvms.schema import Database
-db = Database("dbname")
+from csvms.table import Table
+# Create table
+A = Table(
+    name="A",
+    columns={"c1":int,"c2":str,"c3":float},
+    data=[(1,"Hello",0.1),(2,"World",1.0),])
+# Insert one row
+A.append(3,"Some",0.8)
+# Create a new table 'B' with extended 'A' result of (100 * c3) called c4, and then 
+# select rows where c4 are greater then 50
+B = A.Π({'mul':[{'literal':100},'c3']},"c4").σ({"gt":['c4',50]})
+# Project columns c1, c2 and c4 and print table
+print(B.π(['c1','c2','c4']))
 ```
 
-This will create a new directory, if not exists, inside `$CSVMS_FILE_DIR` path
+the expected result will be like this
 
-> In most cases this will not be necessary because the Database object is implicit created based on the [Table](#table) name using the notation `database.table_name`
+```log
+ TABLE: default.(((AΠ)π)σ)
+ +---+-----+-----+
+ |c1 |c2   |c4   |
+ +---+-----+-----+
+0|  2|World|100.0|
+1|  3| Some| 80.0|
+ +---+-----+-----+
+```
 
 ### Table
 
@@ -153,9 +171,50 @@ And also remove a row by the **index**
    +---+-----+---+
 ```
 
+#### Relational algebra
+
+The main purpose of the relational algebra is to define operators that transform one or more input relations to an output relation. Given that these operators accept relations as input and produce relations as output, they can be combined and used to express potentially complex queries that transform potentially many input relations (whose data are stored in the database) into a single output relation (the query results).
+
+This are the current operations supported:
+
+|Simbolo|Oprador |Operação |Sintaxe|
+|---|--------|---------|-------|
+|**∪**|+|Union|A + B|
+|**∩**|%|Intersection|A % B|
+|**-**|-|Difference|A – B|
+|**×**| * |Product|A * B|
+|**π**|π|Project|A.π(`<attribute list>`)|
+|**σ**|σ|Select|A.σ([`<logic functions>`])|
+|**⋈**|ᐅᐊ|Join|A.ᐅᐊ( B, `<logic functions>` )|
+|**ρ**|ρ|Rename|A.ρ(`name`)|
+|**Π**|Π|Extend|A.Π(`<arithmetic functions>`)|
+|**⟕**|ᗌᐊ|Left Outer Join|A.ᗌᐊ( B, `<logic functions>` )|
+|**⟖**|ᐅᗏ|Right Outer Join|A.ᐅᗏ( B, `<logic functions>` )|
+
+### Database
+
+This object represents a physical location on the file system with a set of [tables](#table)
+
+```python
+from csvms.schema import Database
+db = Database("dbname")
+```
+
+This will create a new directory, if not exists, inside `$CSVMS_FILE_DIR` path
+In most cases will not be necessary explicitly create this object because the Database is implicit created based on the [Table](#table) name using the notation `database.table_name`
+
+> For more informatios use `help(Database)`
+
 ### Catalog
 
 When you instantiate an object the Catalog objet will save the [table](#table) definitions for future queries and save in [json format](https://www.w3schools.com/whatis/whatis_json.asp) on root directory.
+
+```python
+from csvms.catalog import Catalog
+cat = Catalog('file/system/location/path')
+```
+
+In the path used to initialize the catalog contains the `$CSVMS CATALOG` *json* file with all table definitions
 
 ```json
 {
@@ -170,22 +229,6 @@ When you instantiate an object the Catalog objet will save the [table](#table) d
 }
 ```
 
-### Relational algebra
+**Important**: You don't need to explicit create the catalog. That will be automatic created when you initiate any table
 
-The main purpose of the relational algebra is to define operators that transform one or more input relations to an output relation. Given that these operators accept relations as input and produce relations as output, they can be combined and used to express potentially complex queries that transform potentially many input relations (whose data are stored in the database) into a single output relation (the query results).
-
-This are the current operations supported:
-
-|Simbolo|Oprador |Operação |Sintaxe|
-|---|--------|---------|-------|
-|**σ**|σ|Select|A.σ([`<logic functions>`])|
-|**π**|π|Project|A.π(`<attribute list>`)|
-|**∪**|+|Union|A + B|
-|**∩**|%|Intersection|A % B|
-|**-**|-|Difference|A – B|
-|**X**| * |Product|A * B|
-|**⋈**|ᐅᐊ|Join|A.ᐅᐊ( B, `<logic functions>` )|
-|**ρ**|ρ|Rename|A.ρ(`name`)|
-|**Π**|Π|Extend|A.Π(`<arithmetic functions>`)|
-|**⟕**|ᐅᐸ|Left Outer Join|A.ᐅᐸ( B, `<logic functions>` )|
-|**⟖**|ᐳᐊ|Right Outer Join|A.ᐳᐊ( B, `<logic functions>` )|
+> For more informatios use `help(Catalog)`

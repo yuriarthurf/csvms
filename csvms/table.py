@@ -22,6 +22,8 @@ dtypes = {
     "integer":int,
     "float":float
 }
+# Rename column
+rnm = lambda t,c:c if str(c).find('.')!=-1 else f"{t}.{c}"
 # Check for None values
 NaN = lambda z:False if z is None else z
 # Supported operations
@@ -91,13 +93,6 @@ class Table():
         ops = '|'.join(operations.keys())
         match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
         return [match.group(1), match.group(2)]
-
-    @classmethod
-    def _rename_(cls, left:"Table", rigth:"Table"=None) -> str:
-        name = left.name
-        if left.name.count('#') == 0 and rigth is not None:
-            name = f"({left.name}#{rigth.name})"
-        return name
 
     @property
     def full_name(self):
@@ -247,7 +242,8 @@ class Table():
         return True
 
     def show(self, size:int=10, trunc:bool=True) -> str:
-        """Print pretty table data"""
+        """Print as pretty table data"""
+        # Ugly code for a pretty table...
         idx_pad = 3
         # Max size of each column
         col_size = dict()
@@ -386,9 +382,9 @@ class Table():
                 return functions[key](self._value_(row,_x_),self._value_(row,_y_))
         raise DataException(f"Can't evaluate expression: {ast}")
 
-    def _filter_(self, row:dict, ast:dict) -> bool:
-        """ Resolve where conditions recursively
-        :param ast: parsed where
+    def _logical_evaluation_(self, row:dict, ast:dict) -> bool:
+        """Recursively evaluate conditions 
+        :param ast: Abstract Syntax Tree
         :return: Boolean result
         """
         if isinstance(ast, dict):
@@ -396,156 +392,193 @@ class Table():
                 if key in ['missing','exists']:
                     return operations[key](self._value_(row,val))
                 if len(val)>2: # Multiple conditions with and/or
-                    return self._filter_(row, {key:[val[-2],val[-1]]})
+                    return self._logical_evaluation_(row, {key:[val[-2],val[-1]]})
                 _x_, _y_ = val
                 if isinstance(_x_, dict):
                     if _x_.get('literal') is None:
-                        _x_ = self._filter_(row, _x_)
+                        _x_ = self._logical_evaluation_(row, _x_)
                     else:
                         _x_ = _x_['literal']
                 if isinstance(_y_, dict):
                     if _y_.get('literal') is None:
-                        _y_ = self._filter_(row, _y_)
+                        _y_ = self._logical_evaluation_(row, _y_)
                     else:
                         _y_ = _y_['literal']
                 return operations[key](self._value_(row,_x_),self._value_(row,_y_))
         raise DataException(f"Can't evaluate expression: {ast}")
 
-    # Relational Algebra operators
+    ### Relational Algebra operators ###
+
     def __add__(self, other:"Table") -> "Table":
-        """Union Operator"""
+        """Union Operator (∪)"""
         return Table(
-            name = Table._rename_(self,other),
+            name = f"({self.name}∪{other.name})",
+            # Copy all columns from self
             columns={k:v for k,v in self.columns.items()},
-            data= list(dict.fromkeys(self._rows+other._rows)),
-            temp=True)
+            # Sum all distinct rows from self and other table
+            data= list(dict.fromkeys(self._rows + other._rows)))
 
     def __mod__(self, other:"Table") -> "Table":
-        """Inserct Operator"""
+        """Inserct Operator (∩)"""
         return Table(
-            name = Table._rename_(self,other),
+            name = f"({self.name}∩{other.name})",
+            # Copy all columns from self
             columns={k:v for k,v in self.columns.items()},
-            data=[r for r in self for o in other if r == o],
-            temp=True)
-
-    def __mul__(self, other:"Table") -> "Table":
-        """Times Operator"""
-        columns = {k:v for k, v in self.columns.items()}
-        if "." not in self.name:
-            columns = {f"{self.name}.{k}":v for k, v in self.columns.items()}
-            columns.update({f"{other.name}.{k}":v for k, v in other.columns.items()})
-        return Table(
-            name = Table._rename_(self,other),
-            columns=columns,
-            data=[r+o for r in self for o in other],
-            temp=True)
-
-    def __truediv__(self, other:"Table") -> "Table":
-        """Divide Operator"""
-        return Table(
-            name = Table._rename_(self,other),
-            columns={k:v for k, v in self.columns.items() if k not in other.columns.keys()},
-            data=list(),
-            temp=True)
+            # Filter rows of self equal to rows of other
+            data=[r for r in self for o in other if r == o])
 
     def __sub__(self, other:"Table") -> "Table":
-        """Minus Operator"""
-        rows = list()
-        for _r_ in self:
-            rows.append(_r_)
-            for _o_ in other:
-                if _r_ == _o_:
-                    rows.pop()
+        """Difference Operator (−)"""
+        rows = list() # Create a new list of rows
+        for _r_ in self: # For each row in self
+            rows.append(_r_) # Add the self rows to the new list
+            for _o_ in other: # Check if are any tuple in other table that match
+                if _r_ == _o_: # If finds a row in other that are equal to self
+                    rows.pop() # Remove self rows
         return Table(
-            name = Table._rename_(self,other),
+            name = f"({self.name}−{other.name})",
             columns={k:v for k,v in self.columns.items()},
-            data=rows,
-            temp=True)
+            data=rows)
+
+    def __mul__(self, other:"Table") -> "Table":
+        """Times Operator (×)"""
+        # Join the tow sets of columns, and concatenate the table name if needed
+        columns = {rnm(self.name,k):v for k, v in self.columns.items()}
+        columns.update({rnm(other.name,k):v for k, v in other.columns.items()})
+        return Table(
+            name = f"({self.name}×{other.name})",
+            # Concatenated columns
+            columns=columns,
+            # Cartesian product of a set of self rows with a set of other rows
+            data=[r+o for r in self for o in other])
 
     def π(self, columns:list) -> "Table":
-        """Projection Operator"""
+        """Projection Operator (π)"""
+        # Create a list of projected columns and your index
         cols = [(idx,key)for idx, key in enumerate(self.columns.keys()) if key in columns]
-        rows = list()
-        for row in self:
-            _r_ = tuple()
-            for idx,_ in cols:
-                _r_ += (row[idx],)
-            rows.append(_r_)
+        rows = list() # Create a new list of rows
+        for row in self: # For each row
+            _r_ = tuple() # Create a new tuple
+            for idx,_ in cols: # For each projected column
+                _r_ += (row[idx],) # Add values for projected column index
+            rows.append(_r_) # Append the new sub tuple to the new list of rows
         return Table(
-            name = Table._rename_(self),
+            name = f"({self.name}π)",
+            # Use only projected columns
             columns={k:self.columns[k] for _,k in cols},
-            data=rows,
-            temp=True)
+            data=rows)
 
     def σ(self, condition:Dict[str,list]) -> "Table":
-        """Selection Operator
-        :param condition: A expression composed by the logic operation and list of values to compare.
+        """Selection Operator (σ)
+        :param condition: A expression composed by the logic operation and list of values.
                           See 'operations' dictionary to get the list of valid options
 
         # Exemples
-        # where id < 2
+        ## where id < 2
         > where({'lt':['id',2]})
-        >
-        # where val = 'George' and id > 1
+        ## where val = 'George' and id > 1
         > where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})
+
+        # Operations
+        ## List of supported operations and the logical equivalent python evaluation
+        +---------+-------------+
+        | Name    | Python eval |
+        +---------+-------------+
+        | lt      | <           |
+        | gt      | >           |
+        | eq      | ==          |
+        | lte     | <=          |
+        | gte     | >=          |
+        | neq     | !=          |
+        | is      | is          |
+        | in      | in          |
+        | nin     | not in      |
+        | or      | or          |
+        | and     | and         |
+        | missing | is None     |
+        | exists  | is not None |
+        +---------+-------------+
         """
         return Table(
-            name = Table._rename_(self),
+            name = f"({self.name}σ)",
+            # Create a copy of columns
             columns={k:v for k,v in self.columns.items()},
-            data=[r for i, r in enumerate(self) if self._filter_(self[i], condition)],
-            temp=True)
+            # Filter rows with conditions are true
+            data=[r for i, r in enumerate(self) if self._logical_evaluation_(self[i], condition)])
 
     def ᐅᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Join Operator"""
-        tbl = (self * other).σ(where)
-        tbl.name = Table._rename_(self,other)
+        """Join Operator (⋈)"""
+        # Create a new table with the Cartesian product of self and otther
+        tbl = (self * other)\
+            .σ(where) # And select rows where the join condition is true
+        tbl.name = f"({self.name}⋈{other.name})"
         return tbl
 
     def ρ(self, alias:str) -> "Table":
-        """Rename Operator"""
-        rnm = lambda x: x if x.count('.')==0 else x.split('.')[-1]
+        """Rename Operator (ρ)"""
+        # Function to rename column names for the new table name
+        _rnm = lambda x: x if x.count('.')==0 else x.split('.')[-1]
         return Table(
+            # Set new table name
             name = f"{alias}",
-            columns={rnm(k):v for k,v in self.columns.items()},
-            data=[r for r in self],
-            temp=True)
+            # Copy all columns from source table
+            columns={_rnm(k):v for k,v in self.columns.items()},
+            # Copy all rows from source table
+            data=[r for r in self])
 
     def Π(self, extend:dict, alias:str=None) -> "Table":
-        """Extended projection Operator"""
-        rows = list()
-        dtype = None
-        for idx, row in enumerate(self):
-            val = self._extend_(self[idx],extend)
-            if dtype is None:
-                dtype = type(val)
+        """Extended projection Operator (Π)"""
+        rows = list() # New list of rows
+        dtype = None # Use to store the data type of the new extended column
+        for idx, row in enumerate(self): # For each row
+            val = self._extend_(self[idx],extend) # Evaluated expression
+            if dtype is None: # If is the first evaluation
+                dtype = type(val) # Use the result data type
+            # if you find any different type in the next rows
             elif dtype != type(val) and val is not None:
+                # Raise an Data exeption to abort the operation
                 raise DataException(f"{type(val)} error")
+            # If Successful add new value to the row tuple
             rows.append(row + (val,))
+        # Copy the columns from source table
         cols = {k:v for k,v in self.columns.items()}
-        if alias is None:
+        # Add new extended column
+        if alias is None: # Remova some characters and use the expression as column name
             cols[f"{str(extend).replace(' ','').replace('.',',')}"]=dtype
-        else:
+        else: # Use alias for the new extended column
             cols[alias]=dtype
         return Table(
-            name = Table._rename_(self),
+            name = f"({self.name}Π)",
             columns=cols,
-            data=rows,
-            temp=True)
+            data=rows)
 
-    def ᐅᐸ(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Left outer Operator"""
+    def ᗌᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Left outer join (⟕)"""
+        # Cross join between self and other table
         tbl = (self * other).σ(where)
+        # Diference between self and cross jouin is the left rows
         out = self - tbl.π([f"{self.name}.{k}"for k in self.columns.keys()])
-        emp = Table("tmp.left",{k:v for k,v in other.columns.items()},[other.empty_row])
-        return tbl + (out * emp)
+        # Crate a copy of data structure of other table with one empty row
+        emp = Table("⟕",{k:v for k,v in other.columns.items()},[other.empty_row])
+        # Create a product of left rows and empty row of other table and add to the cross
+        lef = tbl + (out * emp)
+        # Rename the result table
+        lef.name = f"({self.name}⟕{other.name})"
+        return lef
 
-    def ᐳᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Right outer Operator"""
+    def ᐅᗏ(self, other:"Table", where:Dict[str,list]) -> "Table":
+        """Right outer join operator(⟖)"""
+        # Cross join between self and other table
         tbl = (self * other).σ(where)
+        # Diference between other table and cross jouin is the right rows
         out = other - tbl.π([f"{other.name}.{k}"for k in other.columns.keys()])
-        emp = Table("tmp.left",{k:v for k,v in self.columns.items()},[self.empty_row])
-        return tbl + (emp * out)
+        # Crate a copy of data structure of self with one empty row
+        emp = Table("⟖",{k:v for k,v in self.columns.items()},[self.empty_row])
+        # Create a product of right rows and empty row of other table and add to the cross
+        rig = tbl + (emp * out)
+        # Rename the result table
+        rig.name = f"({self.name}⟖{other.name})"
+        return rig
 
-#TODO: Implement DIVIDEBY operator
-#TODO: Implement the FULL join operator `ᐳᐸ`
-
+#TODO: Implement DIVIDEBY operator `/`
+#TODO: Implement the FULL join operator `ᗌᗏ`

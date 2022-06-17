@@ -6,12 +6,11 @@ from os import environ
 # Local module
 from csvms import logger
 from csvms.exceptions import TableException
-DICT_PATH = environ.get('CSVMS_CATALOG', 'catalog.json')
 
 class Catalog():
     """Represents objects manage by the system"""
     def __init__(self, directory:str) -> "Catalog":
-        self.location = f"{directory}/{DICT_PATH}"
+        self.location = f"{directory}/{environ.get('CSVMS_CATALOG', 'catalog.json')}"
         self.objects = dict() # List of all objects in the catalog
         try:
             with open(file=self.location, mode="r", encoding="utf-8") as infile:
