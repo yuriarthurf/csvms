@@ -78,9 +78,10 @@ class Table():
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
-        self._rows = data
         if exists(self.location):
             self._rows = list(self.load())
+        if data is not None:
+            self._rows = data
         if self.columns is None:
             raise TableException("Can't create table without columns")
 
