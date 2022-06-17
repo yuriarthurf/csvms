@@ -78,10 +78,9 @@ class Table():
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
+        self._rows = data
         if exists(self.location):
             self._rows = list(self.load())
-        if data is not None:
-            self._rows = data
         if self.columns is None:
             raise TableException("Can't create table without columns")
 
@@ -152,12 +151,12 @@ class Table():
         self.database.catalog[self.full_name] = self.definition
         return True
 
-    def alter(self, option:str, column:Dict[str,type], new:Dict[str,type]=None) -> bool:
+    def alter(self, option:str, column:Dict[str,type], new:Dict[str,type]=None) -> "Table":
         """Alter table definitions
         :param option: Accepts ADD, DROP and MODIFY
         :param column: Where to apply alteration
         :param new: New column definition. Only used on MODIFY operations. Default is None
-        :return: True if table alteration was succeeded
+        :return: The new modified table
         """
         for key, val in column.items():
             if option.upper() == "ADD":
@@ -168,23 +167,23 @@ class Table():
                 if new is None:
                     raise ColumnException("Need to inform new column definition")
                 return self._modify_column_(key, new)
-        return False
+        raise ColumnException(f"Column {column} not found")
 
-    def _add_column_(self, name:str, dtype:type) -> bool:
+    def _add_column_(self, name:str, dtype:type) -> "Table":
         """Add new column to table
         :param name: Column name
         :param dtype: Column data type
-        :return: True if table alteration was succeeded
+        :return: The new modified table
         """
         self.columns.update({name:dtype}) # Add column definition
         for idx, row in enumerate(self._rows):
             self._rows[idx] = row + (dtype(),) # Add default values
-        return True
+        return self
 
-    def _drop_column_(self, column:str) -> bool:
+    def _drop_column_(self, column:str) -> "Table":
         """Drop column from table
         :param key: Column name
-        :return: True if table alteration was succeeded
+        :return: The new modified table
         """
         idx = None
         for pos, col in enumerate(self.columns.keys()):
@@ -198,13 +197,13 @@ class Table():
             row = list(row) # Convert to list
             del row[idx] # remove value for column index
             self._rows[pos] = tuple(row) # Update row
-        return True
+        return self
 
-    def _modify_column_(self, name:str, column:Dict[str,type]) -> bool:
+    def _modify_column_(self, name:str, column:Dict[str,type]) -> "Table":
         """Drop column from table
         :param name: Column name
         :param column: New column
-        :return: True if table alteration was succeeded
+        :return: The new modified table
         """
         idx = None
         val = next(iter(column.values()))
@@ -219,13 +218,12 @@ class Table():
             for pos, row in enumerate(self._rows):
                 row = list(row)
                 row[idx] = val(row[idx]) # Update column value
-                print(type(val(row[idx])))
                 self._rows[pos] = tuple(row) # Update row list
         except Exception as err:
             logger.debug(err)
             self._rows = tmp_rows
             raise ColumnException(f"Cant change data type for column {name}")
-        return True
+        return self
 
     def clean(self) -> bool:
         """Remove all table data"""
