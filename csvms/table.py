@@ -19,46 +19,45 @@ log = logger()
 rnm = lambda t,c:c if str(c).find('.')!=-1 else f"{t}.{c}"
 # Check for None values
 NaN = lambda z:False if z is None else z
-# Supported data types
-dtypes = {
-    "string":str,
-    "varchar":str,
-    "text":str,
-    "int":int,
-    "integer":int,
-    "float":float,
-    "boolean":bool}
-# Supported operations
-operations = {
-    'lt'     :lambda x,y:NaN(x) < NaN(y),
-    'gt'     :lambda x,y:NaN(x) > NaN(y),
-    'eq'     :lambda x,y:NaN(x) == NaN(y),
-    'lte'    :lambda x,y:NaN(x) <= NaN(y),
-    'gte'    :lambda x,y:NaN(x) >= NaN(y),
-    'neq'    :lambda x,y:NaN(x) != NaN(y),
-    'is'     :lambda x,y:NaN(x) is NaN(y),
-    'in'     :lambda x,y:NaN(x) in NaN(y),
-    'nin'    :lambda x,y:NaN(x) not in NaN(y),
-    'or'     :lambda x,y:NaN(x) or NaN(y),
-    'and'    :lambda x,y:NaN(x) and NaN(y),
-    'missing':lambda   x:x is None,
-    'exists' :lambda   x:x is not None}
-# Supported functions
-functions = {
-    'add': lambda x,y: None if x is None or y is None else x+y,
-    'sub': lambda x,y: None if x is None or y is None else x-y,
-    'div': lambda x,y: None if x is None or y is None else x/y,
-    'mul': lambda x,y: None if x is None or y is None else x*y,
-    'concat': NotImplemented} #TODO: Create a new function to CONCATENATE strings
-# All logical operations are also supported as function
-functions.update(operations)
-# Supported operations reverse
-strtypes = {value:key for key, value in dtypes.items()}
 
 class Table():
     """Represents a collection of tuples as table"""
     FORMAT="csv" # Data file format
     CSVSEP=";"   # Separator
+    # Supported data types
+    dtypes = {
+        "string":str,
+        "text":str,
+        "int":int,
+        "integer":int,
+        "float":float,
+        "boolean":bool}
+    # Supported operations
+    operations = {
+        'lt'     :lambda x,y:NaN(x) < NaN(y),
+        'gt'     :lambda x,y:NaN(x) > NaN(y),
+        'eq'     :lambda x,y:NaN(x) == NaN(y),
+        'lte'    :lambda x,y:NaN(x) <= NaN(y),
+        'gte'    :lambda x,y:NaN(x) >= NaN(y),
+        'neq'    :lambda x,y:NaN(x) != NaN(y),
+        'is'     :lambda x,y:NaN(x) is NaN(y),
+        'in'     :lambda x,y:NaN(x) in NaN(y),
+        'nin'    :lambda x,y:NaN(x) not in NaN(y),
+        'or'     :lambda x,y:NaN(x) or NaN(y),
+        'and'    :lambda x,y:NaN(x) and NaN(y),
+        'missing':lambda   x:x is None,
+        'exists' :lambda   x:x is not None}
+    # Supported functions
+    functions = {
+        'add': lambda x,y: None if x is None or y is None else x+y,
+        'sub': lambda x,y: None if x is None or y is None else x-y,
+        'div': lambda x,y: None if x is None or y is None else x/y,
+        'mul': lambda x,y: None if x is None or y is None else x*y,
+        'concat': NotImplemented} #TODO: Create a new function to CONCATENATE strings
+    # All logical operations are also supported as function
+    functions.update(operations)
+    # Supported operations reverse
+    strtypes = {value:key for key, value in dtypes.items()}
 
     def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=None, temp:bool=False):
         """Table representation and the data file using database location path to store all rows
@@ -90,7 +89,7 @@ class Table():
         :param exp: String with operation
         :return: List with operation name and value
         """
-        ops = '|'.join(operations.keys())
+        ops = '|'.join(Table.operations.keys())
         match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
         return [match.group(1), match.group(2)]
 
@@ -104,7 +103,7 @@ class Table():
         """Return table definition as dictionary"""
         return dict(
             name=self.full_name,
-            columns = {key: strtypes[val] for key, val in self.columns.items()}
+            columns = {key: Table.strtypes[val] for key, val in self.columns.items()}
         )
 
     @property
@@ -132,7 +131,7 @@ class Table():
         :return: Tuple iterator
         """
         definition = self.database.catalog[self.full_name]
-        self.columns = {key:dtypes[value] for key, value in definition["columns"].items()}
+        self.columns = {key:Table.dtypes[value] for key, value in definition["columns"].items()}
         with open(self.location, mode='r', encoding="utf-8") as csv_file:
             for raw in reader(csv_file, delimiter=Table.CSVSEP):
                 row = list()
@@ -378,7 +377,7 @@ class Table():
                         _y_ = self._extend_(row, _y_)
                     else:
                         _y_ = _y_['literal']
-                return functions[key](self._value_(row,_x_),self._value_(row,_y_))
+                return Table.functions[key](self._value_(row,_x_),self._value_(row,_y_))
         raise DataException(f"Can't evaluate expression: {ast}")
 
     def _logical_evaluation_(self, row:dict, ast:dict) -> bool:
@@ -389,7 +388,7 @@ class Table():
         if isinstance(ast, dict):
             for key, val in ast.items():
                 if key in ['missing','exists']:
-                    return operations[key](self._value_(row,val))
+                    return Table.operations[key](self._value_(row,val))
                 if len(val)>2: # Multiple conditions with and/or
                     return self._logical_evaluation_(row, {key:[val[-2],val[-1]]})
                 _x_, _y_ = val
@@ -403,7 +402,7 @@ class Table():
                         _y_ = self._logical_evaluation_(row, _y_)
                     else:
                         _y_ = _y_['literal']
-                return operations[key](self._value_(row,_x_),self._value_(row,_y_))
+                return Table.operations[key](self._value_(row,_x_),self._value_(row,_y_))
         raise DataException(f"Can't evaluate expression: {ast}")
 
     ### Relational Algebra operators ###
