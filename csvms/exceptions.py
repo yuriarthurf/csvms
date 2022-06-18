@@ -1,11 +1,12 @@
 """CSVMS Exception classes"""
 from csvms import logger
+log = logger()
 
 class DefaultException(Exception):
     """Base class for exceptions"""
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
-        logger.error(*args)
+        log.error(*args)
 
 class TableException(DefaultException):
     """Base class for Table exceptions"""

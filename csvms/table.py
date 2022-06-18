@@ -12,6 +12,9 @@ from csvms.schema import Database
 from csvms.exceptions import ColumnException
 from csvms.exceptions import DataException
 from csvms.exceptions import TableException
+
+# Init log
+log = logger()
 # Rename column
 rnm = lambda t,c:c if str(c).find('.')!=-1 else f"{t}.{c}"
 # Check for None values
@@ -24,8 +27,6 @@ dtypes = {
     "int":int,
     "integer":int,
     "float":float,
-    "real":float,
-    "number":float,
     "boolean":bool}
 # Supported operations
 operations = {
@@ -219,7 +220,7 @@ class Table():
                 row[idx] = val(row[idx]) # Update column value
                 self._rows[pos] = tuple(row) # Update row list
         except Exception as err:
-            logger.debug(err)
+            log.debug(err)
             self._rows = tmp_rows
             raise ColumnException(f"Cant change data type for column {name}")
         return self
@@ -304,9 +305,9 @@ class Table():
                     row += (val(value[idx]),)
             return row
         except IndexError as err:
-            logger.debug(err)
+            log.debug(err)
         except ValueError as err:
-            logger.debug(err)
+            log.debug(err)
         raise DataException(f"Invalid data {value} to row {tuple(self.columns.values())}")
 
     def append(self, *values) -> bool:
@@ -315,7 +316,7 @@ class Table():
         :return: True if table insertion was succeeded
         """
         self._rows.append(self._validade_(values))
-        logger.info("Row inserted")
+        log.info("Row inserted")
         return True
 
     def __setitem__(self, idx:int, value:tuple) -> bool:
@@ -324,7 +325,7 @@ class Table():
         :param value: New values to the row
         """
         self._rows[idx] = self._validade_(value)
-        logger.info("Row updated")
+        log.info("Row updated")
         return True
 
     def __delitem__(self, idx) -> None:
@@ -332,14 +333,14 @@ class Table():
         :param idx: Row table index to delete
         """
         del self._rows[idx]
-        logger.info("Row deleted")
+        log.info("Row deleted")
 
     def __getitem__(self, key):
         """Return rows as Dict"""
         try:
             return {n:self._rows[key][i] for i,n in enumerate(self.columns)}
         except IndexError:
-            logger.debug("Row %s not found", key)
+            log.debug("Row %s not found", key)
             return {col:None for col in self.columns.keys()}
 
     def __iter__(self):

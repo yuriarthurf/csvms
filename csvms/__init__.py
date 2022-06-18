@@ -1,13 +1,18 @@
 """ CSVMS Module """
-__version__ = '0.2.3'
-import re
 import logging
+import re
 from os import environ
 
-logging.basicConfig()
-logger = logging.getLogger("CSVMS")
-logger.setLevel(getattr(logging, environ.get('LOG_LEVEL', 'INFO')))
-logger.info("version:%s", __version__)
+def logger(identifier:str=None):
+    logging.basicConfig()
+    if identifier is None:
+        identifier = __name__
+    logger = logging.getLogger(identifier)
+    logger.setLevel(getattr(logging, environ.get('LOG_LEVEL', 'INFO')))
+    return logger
+
+__version__ = '0.2.3'
+logger().info("version:%s", __version__)
 
 def pyproject(location:str) -> dict():
     """ Parse toml file to dictionary

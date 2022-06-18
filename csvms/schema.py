@@ -6,6 +6,8 @@ from os import environ
 from csvms import logger
 from csvms.catalog import Catalog
 
+log = logger()
+
 class Database():
     """The database is an file system directory
        Used to store table data files on the local file system"""
@@ -34,7 +36,7 @@ class Database():
         _path = Path(Database.FILE_DIR).joinpath(location)
         try:
             makedirs(_path)
-            logger.debug("create:path:%s",_path)
+            log.debug("create:path:%s",_path)
         except OSError:
-            logger.debug("Directory %s already exists", location)
+            log.debug("Directory %s already exists", location)
         return _path

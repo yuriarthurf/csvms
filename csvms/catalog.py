@@ -7,6 +7,8 @@ from os import environ
 from csvms import logger
 from csvms.exceptions import TableException
 
+log = logger()
+
 class Catalog():
     """Represents objects manage by the system"""
     CATALOG_FILE = environ.get('CSVMS_CATALOG', 'catalog.json')
@@ -18,7 +20,7 @@ class Catalog():
             with open(file=self.location, mode="r", encoding="utf-8") as infile:
                 self.objects = json.load(infile)
         except FileNotFoundError:
-            logger.info("creating new data dictionary in %s", self.location)
+            log.info("creating new data dictionary in %s", self.location)
             makedirs(directory, exist_ok=True)
             self.objects = dict()
             self._save_()
@@ -33,7 +35,7 @@ class Catalog():
         try:
             return self.objects[key]
         except KeyError as err:
-            logger.debug("Table %s not found on catalog: %s",key, err)
+            log.debug("Table %s not found on catalog: %s",key, err)
             raise TableException(f"Table {key} not found")
 
     def __setitem__(self, key:str, value:dict) -> bool:
