@@ -6,26 +6,27 @@ from os import remove
 from os.path import exists
 from pathlib import Path
 from typing import List, Dict
-
 # Local module
 from csvms import logger
 from csvms.schema import Database
 from csvms.exceptions import ColumnException
 from csvms.exceptions import DataException
 from csvms.exceptions import TableException
-# Supported data types
-dtypes = {
-    "string":str,
-    "str":str,
-    "text":str,
-    "int":int,
-    "integer":int,
-    "float":float
-}
 # Rename column
 rnm = lambda t,c:c if str(c).find('.')!=-1 else f"{t}.{c}"
 # Check for None values
 NaN = lambda z:False if z is None else z
+# Supported data types
+dtypes = {
+    "string":str,
+    "varchar":str,
+    "text":str,
+    "int":int,
+    "integer":int,
+    "float":float,
+    "real":float,
+    "number":float,
+    "boolean":bool}
 # Supported operations
 operations = {
     'lt'     :lambda x,y:NaN(x) < NaN(y),
@@ -40,8 +41,7 @@ operations = {
     'or'     :lambda x,y:NaN(x) or NaN(y),
     'and'    :lambda x,y:NaN(x) and NaN(y),
     'missing':lambda   x:x is None,
-    'exists' :lambda   x:x is not None,
-}
+    'exists' :lambda   x:x is not None}
 # Supported functions
 functions = {
     'add': lambda x,y: None if x is None or y is None else x+y,
@@ -51,7 +51,6 @@ functions = {
     'concat': NotImplemented} #TODO: Create a new function to CONCATENATE strings
 # All logical operations are also supported as function
 functions.update(operations)
-
 # Supported operations reverse
 strtypes = {value:key for key, value in dtypes.items()}
 

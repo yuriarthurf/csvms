@@ -9,8 +9,10 @@ from csvms.exceptions import TableException
 
 class Catalog():
     """Represents objects manage by the system"""
+    CATALOG_FILE = environ.get('CSVMS_CATALOG', 'catalog.json')
+    
     def __init__(self, directory:str) -> "Catalog":
-        self.location = f"{directory}/{environ.get('CSVMS_CATALOG', 'catalog.json')}"
+        self.location = f"{directory}/{Catalog.CATALOG_FILE}"
         self.objects = dict() # List of all objects in the catalog
         try:
             with open(file=self.location, mode="r", encoding="utf-8") as infile:
