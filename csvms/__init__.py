@@ -11,7 +11,7 @@ def logger(identifier:str=None):
     logger.setLevel(getattr(logging, environ.get('LOG_LEVEL', 'INFO')))
     return logger
 
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 logger().info("version:%s", __version__)
 
 def pyproject(location:str) -> dict():
