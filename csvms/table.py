@@ -239,7 +239,7 @@ class Table():
         del self.database.catalog[self.full_name]
         return True
 
-    def show(self, size:int=10, trunc:bool=True) -> str:
+    def show(self, size:int=10, trunc:bool=False) -> str:
         """Print as pretty table data"""
         # Ugly code for a pretty table...
         idx_pad = 3
@@ -378,7 +378,7 @@ class Table():
                     else:
                         _y_ = _y_['literal']
                 return Table.functions[key](self._value_(row,_x_),self._value_(row,_y_))
-        raise DataException(f"Can't evaluate expression: {ast}")
+        return ast
 
     def _logical_evaluation_(self, row:dict, ast:dict) -> bool:
         """Recursively evaluate conditions 
@@ -450,21 +450,33 @@ class Table():
             # Cartesian product of a set of self rows with a set of other rows
             data=[r+o for r in self for o in other])
 
-    def π(self, columns:list) -> "Table":
+    def π(self, select:list) -> "Table":
         """Projection Operator (π)"""
         # Create a list of projected columns and your index
-        cols = [(idx,key)for idx, key in enumerate(self.columns.keys()) if key in columns]
-        rows = list() # Create a new list of rows
-        for row in self: # For each row
-            _r_ = tuple() # Create a new tuple
-            for idx,_ in cols: # For each projected column
-                _r_ += (row[idx],) # Add values for projected column index
-            rows.append(_r_) # Append the new sub tuple to the new list of rows
-        return Table(
-            name = f"({self.name}π)",
-            # Use only projected columns
-            columns={k:self.columns[k] for _,k in cols},
-            data=rows)
+        cols = {k:v for k,v in self.columns.items()}
+        rows = [v for v in self]
+        if select != '*': #In case of '*' return all columns
+            if not isinstance(select, list):
+                raise NotImplementedError
+            _tc = list() # List of orderd columns and indexes
+            for col in select:
+                # Get column index
+                for _i_,_c_ in enumerate(self.columns.keys()):
+                    if col.get('name') is not None:
+                        col['value'] = col['name'] #Use the name of column
+                    if col['value']==_c_: #When find the column
+                        _tc.append((_i_,_c_)) #Add to the list with the index
+                        break #Exit from loop when find
+            if len(_tc)!=len(select):
+                raise ColumnException("Cant find all columns")
+            rows = list()
+            for row in self: # For each row
+                _r_ = tuple() # Create a new tuple
+                for idx,_ in _tc: # For each projected column
+                    _r_ += (row[idx],) # Add values for projected column index
+                rows.append(_r_) # Append the new sub tuple to the new list of rows
+            cols = {k:self.columns[k] for _,k in _tc}
+        return Table(name=f"({self.name}π)",columns=cols,data=rows)
 
     def σ(self, condition:Dict[str,list]) -> "Table":
         """Selection Operator (σ)
@@ -555,7 +567,7 @@ class Table():
         # Cross join between self and other table
         tbl = (self * other).σ(where)
         # Diference between self and cross jouin is the left rows
-        out = self - tbl.π([f"{self.name}.{k}"for k in self.columns.keys()])
+        out = self - tbl.π([{'value':f"{self.name}.{k}"}for k in self.columns.keys()])
         # Crate a copy of data structure of other table with one empty row
         emp = Table("⟕",{k:v for k,v in other.columns.items()},[other.empty_row])
         # Create a product of left rows and empty row of other table and add to the cross
@@ -569,7 +581,7 @@ class Table():
         # Cross join between self and other table
         tbl = (self * other).σ(where)
         # Diference between other table and cross jouin is the right rows
-        out = other - tbl.π([f"{other.name}.{k}"for k in other.columns.keys()])
+        out = other - tbl.π([{'value':f"{other.name}.{k}"}for k in other.columns.keys()])
         # Crate a copy of data structure of self with one empty row
         emp = Table("⟖",{k:v for k,v in self.columns.items()},[self.empty_row])
         # Create a product of right rows and empty row of other table and add to the cross
