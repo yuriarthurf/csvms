@@ -4,12 +4,13 @@ import re
 from os import environ
 
 def logger(identifier:str=None):
+    """CSVMS Logger"""
     logging.basicConfig()
     if identifier is None:
         identifier = __name__
-    logger = logging.getLogger(identifier)
-    logger.setLevel(getattr(logging, environ.get('LOG_LEVEL', 'INFO')))
-    return logger
+    log = logging.getLogger(identifier)
+    log.setLevel(getattr(logging, environ.get('LOG_LEVEL', 'INFO')))
+    return log
 
 __version__ = '0.2.4'
 logger().info("version:%s", __version__)
