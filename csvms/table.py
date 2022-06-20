@@ -83,7 +83,6 @@ class Table():
             self._rows = list(self.load())
         if self.columns is None:
             raise TableException("Table not found")
-        makedirs(self.transaction_log, exist_ok=True)
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
@@ -125,11 +124,12 @@ class Table():
 
     def _redo_(self, values:tuple) -> bool:
         """Write transaction redo log file"""
+        makedirs(self.transaction_log, exist_ok=True)
         log_file = self.transaction_log.joinpath("redo")
         if not exists(log_file):
             log_file.touch()
         with open(log_file, 'a', encoding='utf-8') as redo:
-            redo.write(str(values)+'\n')
+            redo.write(str(values)[1:-1]+'\n')
 
     def _value_(self, row:tuple, key:str):
         """Get valeu from row by column name if it's a columnn identifier
