@@ -2,7 +2,8 @@
 import json
 import re
 from csv import reader, writer
-from os import remove
+from datetime import datetime
+from os import remove, makedirs
 from os.path import exists
 from pathlib import Path
 from typing import List, Dict
@@ -82,6 +83,7 @@ class Table():
             self._rows = list(self.load())
         if self.columns is None:
             raise TableException("Table not found")
+        makedirs(self.transaction_log, exist_ok=True)
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
@@ -115,6 +117,19 @@ class Table():
     def empty_row(self) -> tuple:
         """Return an tuple with 'None' values for each column"""
         return tuple([None for _ in self.columns])
+
+    @property
+    def transaction_log(self) -> Path:
+        """Path to transaction log"""
+        return Path(f"log/{self.full_name}")
+
+    def _redo_(self, values:tuple) -> bool:
+        """Write transaction redo log file"""
+        log_file = self.transaction_log.joinpath("transactions")
+        if not exists(log_file):
+            log_file.touch()
+        with open(log_file, 'a', encoding='utf-8') as redo:
+            redo.write(str(values)+'\n')
 
     def _value_(self, row:tuple, key:str):
         """Get valeu from row by column name if it's a columnn identifier
@@ -315,6 +330,7 @@ class Table():
         :return: True if table insertion was succeeded
         """
         self._rows.append(self._validade_(values))
+        self._redo_(('I',(datetime.today().ctime()))+tuple(values))
         log.info("Row inserted")
         return True
 
@@ -324,6 +340,7 @@ class Table():
         :param value: New values to the row
         """
         self._rows[idx] = self._validade_(value)
+        self._redo_(('U',(datetime.today().ctime()))+tuple(value))
         log.info("Row updated")
         return True
 
@@ -331,6 +348,7 @@ class Table():
         """Remove line from table
         :param idx: Row table index to delete
         """
+        self._redo_(('D',(datetime.today().ctime()))+self._rows[idx])
         del self._rows[idx]
         log.info("Row deleted")
 
