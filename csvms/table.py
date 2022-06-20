@@ -121,11 +121,11 @@ class Table():
     @property
     def transaction_log(self) -> Path:
         """Path to transaction log"""
-        return Path(f"log/{self.full_name}")
+        return Path(f"{Database.FILE_DIR}/log/{self.full_name}")
 
     def _redo_(self, values:tuple) -> bool:
         """Write transaction redo log file"""
-        log_file = self.transaction_log.joinpath("transactions")
+        log_file = self.transaction_log.joinpath("redo")
         if not exists(log_file):
             log_file.touch()
         with open(log_file, 'a', encoding='utf-8') as redo:
@@ -480,20 +480,24 @@ class Table():
             for col in select:
                 # Get column index
                 for _i_,_c_ in enumerate(self.columns.keys()):
-                    if col.get('name') is not None:
-                        col['value'] = col['name'] #Use the name of column
                     if col['value']==_c_: #When find the column
-                        _tc.append((_i_,_c_)) #Add to the list with the index
+                        _a_ = _c_
+                        if col.get('name') is not None:
+                            _a_ = col['name']
+                        _tc.append((_i_,_c_,_a_)) #Add to the list with the index
                         break #Exit from loop when find
+                    elif col.get('name')==_c_:
+                        _a_ = _c_ = col['name']
+                        _tc.append((_i_,_c_,_a_)) #Add to the list with the index
             if len(_tc)!=len(select):
                 raise ColumnException("Cant find all columns")
             rows = list()
             for row in self: # For each row
                 _r_ = tuple() # Create a new tuple
-                for idx,_ in _tc: # For each projected column
+                for idx,_,_ in _tc: # For each projected column
                     _r_ += (row[idx],) # Add values for projected column index
                 rows.append(_r_) # Append the new sub tuple to the new list of rows
-            cols = {k:self.columns[k] for _,k in _tc}
+            cols = {a:self.columns[k] for _,k,a in _tc}
         return Table(name=f"({self.name}π)",columns=cols,data=rows)
 
     def σ(self, condition:Dict[str,list]) -> "Table":
