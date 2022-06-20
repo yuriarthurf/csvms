@@ -6,7 +6,7 @@ class DefaultException(Exception):
     """Base class for exceptions"""
     def __init__(self, *args: object) -> None:
         super().__init__(*args)
-        log.error(*args)
+        log.debug(*args)
 
 class TableException(DefaultException):
     """Base class for Table exceptions"""
