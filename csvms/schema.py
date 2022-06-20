@@ -35,8 +35,7 @@ class Database():
         """
         _path = Path(Database.FILE_DIR).joinpath(location)
         try:
-            makedirs(_path)
-            log.debug("create:path:%s",_path)
-        except OSError:
-            log.debug("Directory %s already exists", location)
+            makedirs(_path, exist_ok=True)
+        except OSError as err:
+            log.debug(err)
         return _path
