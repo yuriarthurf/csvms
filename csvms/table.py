@@ -81,7 +81,7 @@ class Table():
         if exists(self.location):
             self._rows = list(self.load())
         if self.columns is None:
-            raise TableException("Can't create table without columns")
+            raise TableException("Table not found")
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
@@ -239,7 +239,7 @@ class Table():
         del self.database.catalog[self.full_name]
         return True
 
-    def show(self, size:int=10, trunc:bool=False) -> str:
+    def show(self, size:int=10, trunc:bool=True) -> str:
         """Print as pretty table data"""
         # Ugly code for a pretty table...
         idx_pad = 3
@@ -289,7 +289,7 @@ class Table():
                 for key, val in self[_idx].items():
                     rows += f"{str(val):{'>'}{col_size[key]}}|"
                 rows+='\n'
-        tbl = f"{' ':{'>'}{idx_pad}}TABLE: {self.full_name}\n"
+        tbl = f"TABLE: {self.full_name}\n"
         if len(rows)>0:
             return f"""{tbl}{sep}\n{col}\n{sep}\n{rows[:-1]}\n{sep}\n"""
         return f"""{tbl}{sep}\n{col}\n{sep}\n{sep}\n"""
@@ -359,7 +359,7 @@ class Table():
         """Pretty table format"""
         return self.show()
 
-    def _extend_(self, row:dict, ast:dict):
+    def extend(self, row:dict, ast:dict):
         """ Resolve functions recursively
         :param ast: parsed expression
         :return: Calculated value
@@ -369,18 +369,18 @@ class Table():
                 _x_, _y_ = val
                 if isinstance(_x_, dict):
                     if _x_.get('literal') is None:
-                        _x_ = self._extend_(row, _x_)
+                        _x_ = self.extend(row, _x_)
                     else:
                         _x_ = _x_['literal']
                 if isinstance(_y_, dict):
                     if _y_.get('literal') is None:
-                        _y_ = self._extend_(row, _y_)
+                        _y_ = self.extend(row, _y_)
                     else:
                         _y_ = _y_['literal']
                 return Table.functions[key](self._value_(row,_x_),self._value_(row,_y_))
         return ast
 
-    def _logical_evaluation_(self, row:dict, ast:dict) -> bool:
+    def logical_evaluation(self, row:dict, ast:dict) -> bool:
         """Recursively evaluate conditions 
         :param ast: Abstract Syntax Tree
         :return: Boolean result
@@ -390,16 +390,16 @@ class Table():
                 if key in ['missing','exists']:
                     return Table.operations[key](self._value_(row,val))
                 if len(val)>2: # Multiple conditions with and/or
-                    return self._logical_evaluation_(row, {key:[val[-2],val[-1]]})
+                    return self.logical_evaluation(row, {key:[val[-2],val[-1]]})
                 _x_, _y_ = val
                 if isinstance(_x_, dict):
                     if _x_.get('literal') is None:
-                        _x_ = self._logical_evaluation_(row, _x_)
+                        _x_ = self.logical_evaluation(row, _x_)
                     else:
                         _x_ = _x_['literal']
                 if isinstance(_y_, dict):
                     if _y_.get('literal') is None:
-                        _y_ = self._logical_evaluation_(row, _y_)
+                        _y_ = self.logical_evaluation(row, _y_)
                     else:
                         _y_ = _y_['literal']
                 return Table.operations[key](self._value_(row,_x_),self._value_(row,_y_))
@@ -514,7 +514,7 @@ class Table():
             # Create a copy of columns
             columns={k:v for k,v in self.columns.items()},
             # Filter rows with conditions are true
-            data=[r for i, r in enumerate(self) if self._logical_evaluation_(self[i], condition)])
+            data=[r for i, r in enumerate(self) if self.logical_evaluation(self[i], condition)])
 
     def ᐅᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator (⋈)"""
@@ -541,7 +541,7 @@ class Table():
         rows = list() # New list of rows
         dtype = None # Use to store the data type of the new extended column
         for idx, row in enumerate(self): # For each row
-            val = self._extend_(self[idx],extend) # Evaluated expression
+            val = self.extend(self[idx],extend) # Evaluated expression
             if dtype is None: # If is the first evaluation
                 dtype = type(val) # Use the result data type
             # if you find any different type in the next rows
