@@ -330,7 +330,7 @@ class Table():
         :return: True if table insertion was succeeded
         """
         self._rows.append(self._validade_(values))
-        self._redo_(('I',(datetime.today().ctime()))+tuple(values))
+        self._redo_(('I',(datetime.today().isoformat()))+tuple(values))
         log.info("Row inserted")
         return True
 
@@ -340,7 +340,7 @@ class Table():
         :param value: New values to the row
         """
         self._rows[idx] = self._validade_(value)
-        self._redo_(('U',(datetime.today().ctime()))+tuple(value))
+        self._redo_(('U',(datetime.today().isoformat()))+tuple(value))
         log.info("Row updated")
         return True
 
@@ -348,7 +348,7 @@ class Table():
         """Remove line from table
         :param idx: Row table index to delete
         """
-        self._redo_(('D',(datetime.today().ctime()))+self._rows[idx])
+        self._redo_(('D',(datetime.today().isoformat()))+self._rows[idx])
         del self._rows[idx]
         log.info("Row deleted")
 
