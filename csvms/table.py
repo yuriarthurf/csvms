@@ -54,7 +54,11 @@ class Table():
         'sub': lambda x,y: None if x is None or y is None else x-y,
         'div': lambda x,y: None if x is None or y is None else x/y,
         'mul': lambda x,y: None if x is None or y is None else x*y,
-        'concat': NotImplemented} #TODO: Create a new function to CONCATENATE strings
+        #TODO: Concatenate two string
+        'concat': NotImplementedError,
+        #TODO: Raises expr1 to the power of expr2.
+        'pow': NotImplementedError,
+    }
     # All logical operations are also supported as function
     functions.update(operations)
     # Supported operations reverse
@@ -468,6 +472,9 @@ class Table():
             # Cartesian product of a set of self rows with a set of other rows
             data=[r+o for r in self for o in other])
 
+    #TODO: Implement DivideBy operator
+    # More info: https://en.wikipedia.org/wiki/Relational_algebra#Division_(%C3%B7)
+
     def π(self, select:list) -> "Table":
         """Projection Operator (π)"""
         # Create a list of projected columns and your index
@@ -500,11 +507,11 @@ class Table():
             cols = {a:self.columns[k] for _,k,a in _tc}
         return Table(name=f"({self.name}π)",columns=cols,data=rows)
 
-    def σ(self, condition:Dict[str,list]) -> "Table":
+    def σ(self, condition:Dict[str,list], null:bool=False) -> "Table":
         """Selection Operator (σ)
         :param condition: A expression composed by the logic operation and list of values.
                           See 'operations' dictionary to get the list of valid options
-
+        :param null: If 'True' return a empty roll if no rows return. Default 'False'
         # Exemples
         ## where id < 2
         > where({'lt':['id',2]})
@@ -531,12 +538,17 @@ class Table():
         | exists  | is not None |
         +---------+-------------+
         """
+        rows = list() # Filter rows with conditions are true
+        for idx, row in enumerate(self):
+            if self.logical_evaluation(self[idx], condition):
+                rows.append(row)     
+        if len(rows)==0 and null:
+            rows.append(self.empty_row)
         return Table(
             name = f"({self.name}σ)",
             # Create a copy of columns
             columns={k:v for k,v in self.columns.items()},
-            # Filter rows with conditions are true
-            data=[r for i, r in enumerate(self) if self.logical_evaluation(self[i], condition)])
+            data=rows)
 
     def ᐅᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator (⋈)"""
@@ -589,7 +601,7 @@ class Table():
         # Cross join between self and other table
         tbl = (self * other).σ(where)
         # Diference between self and cross jouin is the left rows
-        out = self - tbl.π([{'value':f"{self.name}.{k}"}for k in self.columns.keys()])
+        out = self - tbl.π([{'value':rnm(self.name,k)} for k in self.columns.keys()])
         # Crate a copy of data structure of other table with one empty row
         emp = Table("⟕",{k:v for k,v in other.columns.items()},[other.empty_row])
         # Create a product of left rows and empty row of other table and add to the cross
@@ -603,7 +615,7 @@ class Table():
         # Cross join between self and other table
         tbl = (self * other).σ(where)
         # Diference between other table and cross jouin is the right rows
-        out = other - tbl.π([{'value':f"{other.name}.{k}"}for k in other.columns.keys()])
+        out = other - tbl.π([{'value':rnm(other.name,k)} for k in other.columns.keys()])
         # Crate a copy of data structure of self with one empty row
         emp = Table("⟖",{k:v for k,v in self.columns.items()},[self.empty_row])
         # Create a product of right rows and empty row of other table and add to the cross
@@ -612,5 +624,5 @@ class Table():
         rig.name = f"({self.name}⟖{other.name})"
         return rig
 
-#TODO: Implement DIVIDEBY operator `/`
-#TODO: Implement the FULL join operator `ᗌᗏ`
+    #TODO: Implement FULL join operator `ᗌᗏ`
+    #TODO: Implement ANTI join operator `▷`
