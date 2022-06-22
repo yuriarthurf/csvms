@@ -454,7 +454,10 @@ class Table():
             rows.append(_r_) # Add the self rows to the new list
             for _o_ in other: # Check if are any tuple in other table that match
                 if _r_ == _o_: # If finds a row in other that are equal to self
-                    rows.pop() # Remove self rows
+                    try:
+                        rows.pop() # Remove self rows
+                    except IndexError:
+                        continue
         return Table(
             name = f"({self.name}−{other.name})",
             columns={k:v for k,v in self.columns.items()},
@@ -507,11 +510,10 @@ class Table():
             cols = {a:self.columns[k] for _,k,a in _tc}
         return Table(name=f"({self.name}π)",columns=cols,data=rows)
 
-    def σ(self, condition:Dict[str,list], null:bool=False) -> "Table":
+    def σ(self, condition:Dict[str,list]) -> "Table":
         """Selection Operator (σ)
         :param condition: A expression composed by the logic operation and list of values.
                           See 'operations' dictionary to get the list of valid options
-        :param null: If 'True' return a empty roll if no rows return. Default 'False'
         # Exemples
         ## where id < 2
         > where({'lt':['id',2]})
@@ -538,17 +540,12 @@ class Table():
         | exists  | is not None |
         +---------+-------------+
         """
-        rows = list() # Filter rows with conditions are true
-        for idx, row in enumerate(self):
-            if self.logical_evaluation(self[idx], condition):
-                rows.append(row)     
-        if len(rows)==0 and null:
-            rows.append(self.empty_row)
         return Table(
             name = f"({self.name}σ)",
             # Create a copy of columns
             columns={k:v for k,v in self.columns.items()},
-            data=rows)
+            # Filter rows with conditions are true
+            data=[r for i, r in enumerate(self) if self.logical_evaluation(self[i], condition)])
 
     def ᐅᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator (⋈)"""
