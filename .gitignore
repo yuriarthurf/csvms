@@ -14,3 +14,4 @@ redo
 metastore_db/
 spark-warehouse/
 *.log
+scripts/
