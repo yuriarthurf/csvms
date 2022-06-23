@@ -13,7 +13,7 @@ def logger(identifier:str=None):
     return log
 
 __version__ = '0.2.5'
-logger().info("version:%s", __version__)
+logger().debug("version:%s", __version__)
 
 def pyproject(location:str) -> dict():
     """ Parse toml file to dictionary

@@ -11,7 +11,6 @@ keywords = ["bootcamp","csv","dbms","database","relational-algebra"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-mo-sql-parsing = "^8.185.22160"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -19,6 +18,8 @@ autopep8 = "^1.6.0"
 pylint = "^2.13.9"
 ipykernel = "^6.15.0"
 pyspark = "^3.3.0"
+mo-sql-parsing = "^8.185.22160"
+docopt = "^0.6.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
