@@ -89,6 +89,11 @@ class Table():
             raise TableException("Table not found")
 
     @classmethod
+    def op_ts(cls) -> str:
+        """Return a formatted timestamp"""
+        return datetime.today().isoformat().replace('T',' ')
+
+    @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
         """Condition parser
         :param exp: String with operation
@@ -130,10 +135,9 @@ class Table():
         """Write transaction redo log file"""
         makedirs(self.transaction_log, exist_ok=True)
         log_file = self.transaction_log.joinpath("redo")
-        if not exists(log_file):
-            log_file.touch()
-        with open(log_file, 'a', encoding='utf-8') as redo:
-            redo.write(str(values)[1:-1]+'\n')
+        with open(log_file, mode='a', encoding="utf-8") as redolog:
+            writer(redolog).writerow(values)
+        return True
 
     def _value_(self, row:tuple, key:str):
         """Get valeu from row by column name if it's a columnn identifier
@@ -334,7 +338,7 @@ class Table():
         :return: True if table insertion was succeeded
         """
         self._rows.append(self._validade_(values))
-        self._redo_(('I',(datetime.today().isoformat()))+tuple(values))
+        self._redo_(('I',(Table.op_ts()))+tuple(values))
         log.info("Row inserted")
         return True
 
@@ -344,7 +348,7 @@ class Table():
         :param value: New values to the row
         """
         self._rows[idx] = self._validade_(value)
-        self._redo_(('U',(datetime.today().isoformat()))+tuple(value))
+        self._redo_(('U',(Table.op_ts()))+tuple(value))
         log.info("Row updated")
         return True
 
@@ -352,7 +356,7 @@ class Table():
         """Remove line from table
         :param idx: Row table index to delete
         """
-        self._redo_(('D',(datetime.today().isoformat()))+self._rows[idx])
+        self._redo_(('D',(Table.op_ts()))+self._rows[idx])
         del self._rows[idx]
         log.info("Row deleted")
 
