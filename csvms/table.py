@@ -407,7 +407,7 @@ class Table():
         return ast
 
     def logical_evaluation(self, row:dict, ast:dict) -> bool:
-        """Recursively evaluate conditions 
+        """Recursively evaluate conditions
         :param ast: Abstract Syntax Tree
         :return: Boolean result
         """
