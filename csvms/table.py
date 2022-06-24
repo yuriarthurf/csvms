@@ -630,4 +630,7 @@ class Table():
         return rig
 
     #TODO: Implement FULL join operator `ᗌᗏ`
-    #TODO: Implement ANTI join operator `▷`
+    #TODO: Implement LEFT ANTI join operator `ᐅ`
+    #TODO: Implement RIGHT ANTI join operator `◁`
+    #TODO: Implement LEFT SEMI join operator `ᐳᐊ`
+    #TODO: Implement RIGHT SEMI join operator `ᐅᐸ`
