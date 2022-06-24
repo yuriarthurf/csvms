@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "csvms"
-version = "0.2.5"
+version = "0.2.6"
 description = "Comma-separated values management system"
 authors = ["Didone <tiago.didone@compasso.com.br>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/Didone/csvms"
+homepage = "https://didone.github.io/csvms/"
 repository = "https://github.com/Didone/csvms.git"
 keywords = ["bootcamp","csv","dbms","database","relational-algebra"]
 
