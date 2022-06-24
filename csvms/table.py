@@ -262,7 +262,7 @@ class Table():
         del self.database.catalog[self.full_name]
         return True
 
-    def show(self, size:int=10, trunc:bool=True) -> str:
+    def show(self, size:int=20, trunc:bool=True) -> str:
         """Print as pretty table data"""
         # Ugly code for a pretty table...
         idx_pad = 3
@@ -514,7 +514,7 @@ class Table():
             cols = {a:self.columns[k] for _,k,a in _tc}
         return Table(name=f"({self.name}π)",columns=cols,data=rows)
 
-    def σ(self, condition:Dict[str,list]) -> "Table":
+    def σ(self, condition:Dict[str,list], null=False) -> "Table":
         """Selection Operator (σ)
         :param condition: A expression composed by the logic operation and list of values.
                           See 'operations' dictionary to get the list of valid options
@@ -544,12 +544,16 @@ class Table():
         | exists  | is not None |
         +---------+-------------+
         """
+        rows = list()
+        for idx, row in enumerate(self):
+            if self.logical_evaluation(self[idx], condition):
+                rows.append(row)
+        if null and len(rows)==0:
+            rows.append(self.empty_row)
         return Table(
             name = f"({self.name}σ)",
-            # Create a copy of columns
             columns={k:v for k,v in self.columns.items()},
-            # Filter rows with conditions are true
-            data=[r for i, r in enumerate(self) if self.logical_evaluation(self[i], condition)])
+            data=rows)
 
     def ᐅᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
         """Join Operator (⋈)"""
