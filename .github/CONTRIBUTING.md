@@ -18,14 +18,11 @@ We recommend to install the following tools before start:
 ### Environments
 
 After clone this repository, use [Poetry](https://python-poetry.org/) to create your virtual environment.
-If you already has [pandas](https://pandas.pydata.org) and [seaborn](https://seaborn.pydata.org/tutorial.html) libraries installed, and you don't want to install them again, to create an virtual enviorment and install all dependencies just type ```poetry install```.
-Otherwise, to create a virtual environment installing pandas and seaborn, you can pass them to Poetry as extras:
 
-```sh
+```bash
+# Install all dependencies
 poetry install
-```
-And then, activate your virtual environment
-```sh
+# Activate your virtual environment
 poetry shell
 ```
 
@@ -96,10 +93,6 @@ Every chunk of code that may be hard to understand has some comments above it. I
   - :arrow_up: `:arrow_up:` when upgrading dependencies
   - :arrow_down: `:arrow_down:` when downgrading dependencies
   - :shirt: `:shirt:` when removing linter warnings
-
-## Check out the roadmap
-
-We have some [functionalities in mind](ROADMAP.md) and we have issued them and there is a *milestone* label available on the issue. If there is a bug or a feature that is not listed in the **issues** page or there is no one assigned to the issue, feel free to fix/add it! Although it's better to discuss it in the issue or create a new issue for it so there is no confilcting code.
 
 ## Licensing
 
