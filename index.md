@@ -1,7 +1,5 @@
 # Bootcamp `SQL`
 
-[![PyPI](https://img.shields.io/pypi/v/csvms)](https://pypi.org/project/csvms/) 
-
 Este é um *bootcamp* criado para engenheiros de dados que desejam se aprofundar nas arquiteturas de bancos de dados e suas respectivas tecnologias.
 
 ## Agenda
