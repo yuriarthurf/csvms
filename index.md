@@ -26,7 +26,7 @@ O segundo dia será focado inteiramente em consultas.
 
 ### [Terceiro dia](https://github.com/Didone/csvms/milestone/3)
 
-Este dia é focado nos tópicos mais avançados que um engenheiro de dados deve conhecer a fim de extrair o melhor das arquiteturas de banco de dados.
+Neste dia abordaremos tópicos mais avançados que um engenheiro de dados deve conhecer a fim de extrair o melhor das arquiteturas de banco de dados.
 
 + Otimizador
 + Conexões
