@@ -1,39 +1,33 @@
-## Welcome to GitHub Pages
+# SQL Bootcamp
 
-[Documentation](docs/index.html)
+[![PyPI](https://img.shields.io/pypi/v/csvms)](https://pypi.org/project/csvms/) 
 
-You can use the [editor on GitHub](https://github.com/Didone/csvms/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+## Agenda
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+### Primeiro dia
 
-### Markdown
+No primeiro dia de *bootcamp* iremos explorar as operações de definição, manipulação e controle de transações.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
++ Conceitos gerais sobre bancos de dados
++ Padrão SQL
++ Linguagem de definição de dados
++ Linguagem de manipulação de dados
++ Linguagem de transação de dados
 
-```markdown
-Syntax highlighted code block
+### Segundo dia
 
-# Header 1
-## Header 2
-### Header 3
+O segundo dia será focado inteiramente em consultas.
 
-- Bulleted
-- List
++ Álgebra relacional
++ Operações de junção
++ Linguagem de consulta de dados
 
-1. Numbered
-2. List
+### Terceiro dia
 
-**Bold** and _Italic_ and `Code` text
+Este dia é focado nos tópicos mais avançados que um engenheiro de dados deve conhecer a fim de extrair o melhor das arquiteturas de banco de dados.
 
-[Link](url) and ![Image](src)
-```
-
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/Didone/csvms/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
++ Otimizador
++ Conexões
++ Análise
++ Armazenamento
++ Processamento
