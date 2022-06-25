@@ -601,36 +601,8 @@ class Table():
             columns=cols,
             data=rows)
 
-    def ᗌᐊ(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Left outer join (⟕)"""
-        # Cross join between self and other table
-        tbl = (self * other).σ(where)
-        # Diference between self and cross jouin is the left rows
-        out = self - tbl.π([{'value':rnm(self.name,k)} for k in self.columns.keys()])
-        # Crate a copy of data structure of other table with one empty row
-        emp = Table("⟕",{k:v for k,v in other.columns.items()},[other.empty_row])
-        # Create a product of left rows and empty row of other table and add to the cross
-        lef = tbl + (out * emp)
-        # Rename the result table
-        lef.name = f"({self.name}⟕{other.name})"
-        return lef
-
-    def ᐅᗏ(self, other:"Table", where:Dict[str,list]) -> "Table":
-        """Right outer join operator(⟖)"""
-        # Cross join between self and other table
-        tbl = (self * other).σ(where)
-        # Diference between other table and cross jouin is the right rows
-        out = other - tbl.π([{'value':rnm(other.name,k)} for k in other.columns.keys()])
-        # Crate a copy of data structure of self with one empty row
-        emp = Table("⟖",{k:v for k,v in self.columns.items()},[self.empty_row])
-        # Create a product of right rows and empty row of other table and add to the cross
-        rig = tbl + (emp * out)
-        # Rename the result table
-        rig.name = f"({self.name}⟖{other.name})"
-        return rig
-
     #TODO: Implement FULL join operator `ᗌᗏ`
+    #TODO: Implement LEFT SEMI join operator `ᐅᐸ`
+    #TODO: Implement RIGHT SEMI join operator `ᐳᐊ`
     #TODO: Implement LEFT ANTI join operator `ᐅ`
     #TODO: Implement RIGHT ANTI join operator `◁`
-    #TODO: Implement LEFT SEMI join operator `ᐳᐊ`
-    #TODO: Implement RIGHT SEMI join operator `ᐅᐸ`
