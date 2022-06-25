@@ -1,10 +1,14 @@
-# SQL Bootcamp
+# Bootcamp `SQL`
 
 [![PyPI](https://img.shields.io/pypi/v/csvms)](https://pypi.org/project/csvms/) 
 
+Este é um *bootcamp* criado para engenheiros de dados que desejam se aprofundar nas arquiteturas de bancos de dados e suas respectivas tecnologias.
+
 ## Agenda
 
-### Primeiro dia
+Abaixo estão os tópicos que serão abordados em cada um dos dias de *bootcamp*
+
+### [Primeiro dia](https://github.com/Didone/csvms/milestone/1)
 
 No primeiro dia de *bootcamp* iremos explorar as operações de definição, manipulação e controle de transações.
 
@@ -14,7 +18,7 @@ No primeiro dia de *bootcamp* iremos explorar as operações de definição, man
 + Linguagem de manipulação de dados
 + Linguagem de transação de dados
 
-### Segundo dia
+### [Segundo dia](https://github.com/Didone/csvms/milestone/2)
 
 O segundo dia será focado inteiramente em consultas.
 
@@ -22,7 +26,7 @@ O segundo dia será focado inteiramente em consultas.
 + Operações de junção
 + Linguagem de consulta de dados
 
-### Terceiro dia
+### [Terceiro dia](https://github.com/Didone/csvms/milestone/3)
 
 Este dia é focado nos tópicos mais avançados que um engenheiro de dados deve conhecer a fim de extrair o melhor das arquiteturas de banco de dados.
 
