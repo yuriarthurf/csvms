@@ -1,6 +1,6 @@
 # Bootcamp `SQL`
 
-Este é um *bootcamp* criado para engenheiros de dados que desejam se aprofundar nas arquiteturas de bancos de dados e suas respectivas tecnologias.
+Este é um *bootcamp* criado para **engenheiros de dados** que desejam se aprofundar nas arquiteturas de bancos de dados e suas respectivas tecnologias.
 
 ## Agenda
 
@@ -26,7 +26,7 @@ O segundo dia será focado inteiramente em consultas.
 
 ### [Terceiro dia](https://github.com/Didone/csvms/milestone/3)
 
-Neste dia abordaremos tópicos mais avançados que um engenheiro de dados deve conhecer a fim de extrair o melhor das arquiteturas de banco de dados.
+Neste dia abordaremos tópicos mais avançados, que um engenheiro de dados deve conhecer a fim de extrair o melhor das arquiteturas de banco de dados.
 
 + Otimizador
 + Conexões
