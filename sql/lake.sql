@@ -1,5 +1,5 @@
 --aws s3 sync bootcamp/examples/data/log s3://compass.uol.bootcamp/sql
---https://docs.aws.amazon.com/pt_br/athena/latest/ug/data-types.html
+-- https://docs.aws.amazon.com/pt_br/athena/latest/ug/data-types.html
 CREATE EXTERNAL TABLE csvms.raw_lista_frutas(
     op string, 
     op_ts timestamp,
@@ -199,22 +199,15 @@ STORED AS TEXTFILE
 LOCATION 's3://compass.uol.bootcamp/locations';
 
 -- https://prestodb.io/docs/0.217/functions/json.html
---https://docs.aws.amazon.com/pt_br/athena/latest/ug/ctas-examples.html
-CREATE table csvms.locations
-WITH (
-      external_location = 's3://compass.uol.bootcamp/silver/locations/',
-      write_compression = 'SNAPPY',
-      format = 'PARQUET')
-    AS
+CREATE OR REPLACE VIEW csvms.locations AS
+  WITH prep AS (
+SELECT json_extract_scalar(results, '$') results
+  FROM csvms.raw_locations)
 SELECT CAST(json_extract(prep.results,'$.city') AS VARCHAR) city
      , CAST(json_extract(prep.results,'$.state') AS VARCHAR) state
      , CAST(json_extract(prep.results,'$.country') AS VARCHAR) country
-     , CAST(element_at(
-        regexp_extract_all(CAST(json_extract(prep.results,'$.coordinates') AS VARCHAR) 
-      , '[0-9.-]+'),1) AS DOUBLE) longitude
-     , cast(element_at(
-        regexp_extract_all(CAST(json_extract(prep.results,'$.coordinates') AS VARCHAR) 
-      , '[0-9.-]+'),2) AS DOUBLE) latitude
-  FROM (SELECT json_extract_scalar(results, '$') results
-         FROM csvms.raw_locations) prep
+     , regexp_extract_all(
+        CAST(json_extract(prep.results,'$.coordinates') AS VARCHAR) 
+      , '[0-9.-]+') coordinates
+  FROM prep
 ;
