@@ -31,7 +31,7 @@ FIELDS TERMINATED BY ','
 STORED AS TEXTFILE
 LOCATION 's3://compass.uol.bootcamp/sql/default.venda_frutas/';
 
-CREATE OR REPLACE VIEW lista_frutas
+CREATE OR REPLACE VIEW csvms.lista_frutas
     AS
   WITH current as (
 SELECT max(op_ts) last
@@ -46,7 +46,7 @@ SELECT raw_lista_frutas.nm_fruta
    AND current.nm_fruta = raw_lista_frutas.nm_fruta
  WHERE raw_lista_frutas.op <> 'D';
 
-CREATE OR REPLACE VIEW tipo_frutas
+CREATE OR REPLACE VIEW csvms.tipo_frutas
     AS
   WITH current as (
 SELECT max(op_ts) last
@@ -61,7 +61,7 @@ SELECT raw_tipo_frutas.tp_fruta
    AND current.tp_fruta = raw_tipo_frutas.tp_fruta
  WHERE raw_tipo_frutas.op <> 'D';
 
-CREATE OR REPLACE VIEW venda_frutas
+CREATE OR REPLACE VIEW csvms.venda_frutas
     AS
   WITH current as (
 SELECT max(op_ts) last
@@ -91,3 +91,110 @@ SELECT t.tp_fruta tipo
 EXPLAIN ANALYZE VERBOSE  SELECT nm_fruta FROM raw_lista_frutas WHERE tp_fruta = 'doce';
 -- https://prestodb.io/docs/current/optimizer.html
 -- https://github.com/prestodb/presto/tree/master/presto-spi/src/main/java/com/facebook/presto/spi/plan
+
+--https://randomuser.me/api/?format=json&nat=br&results=5
+--aws s3 sync bootcamp/sql/data/ s3://compass.uol.bootcamp/         
+CREATE EXTERNAL TABLE csvms.randomuser (
+  results array<
+    struct<
+      `gender`:string,
+      `name`:struct<
+        `title`:string,
+        `first`:string,
+        `last`:string>,
+      `location`:struct<
+        `street`:struct<
+            `number`:int,
+            `name`:string>,
+        `city`:string,
+        `state`:string,
+        `country`:string,
+        `postcode`:int,
+        `coordinates`:struct<
+            `latitude`:float,
+            `longitude`:float>,
+        `timezone`:struct<
+            `offset`:string,
+            `description`:string>>,
+      `email`:string,
+      `login`:struct<
+          `uuid`:string,
+          `username`:string,
+          `password`:string,
+          `salt`:string,
+          `md5`:string,
+          `sha1`:string,
+          `sha256`:string>,
+      `dob`:struct<
+          `date`:timestamp,
+          `age`:string>,
+      `registered`:struct<
+          `date`:timestamp,
+          `age`:string>,
+      `phone`:string,
+      `cell`:string,
+      `picture`:struct<
+          `large`:string,
+          `medium`:string,
+          `thumbnail`:string>,
+      `nat`:string
+    >
+  >,
+  info struct<
+    `seed`:string,
+    `results`:int,
+    `page`:int,
+    `version`:string
+  >)
+ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe'
+LOCATION 's3://compass.uol.bootcamp/users'
+;
+
+SELECT randomuser.info.seed
+     , randomuser.info.results
+     , randomuser.info.page
+     , randomuser.info.version
+  FROM csvms.randomuser
+;
+
+CREATE OR REPLACE VIEW users as
+SELECT users.results.gender
+     , users.results.name.title
+     , users.results.name.first
+     , users.results.name.last
+     , users.results.location.street.number
+     , users.results.location.street.name
+     , users.results.location.city
+     , users.results.location.state
+     , users.results.location.country
+     , users.results.location.postcode
+     , users.results.location.coordinates.latitude
+     , users.results.location.coordinates.longitude
+     , users.results.location.timezone.offset
+     , users.results.location.timezone.description
+     , users.results.email
+     , users.results.login.uuid
+     , users.results.login.username
+     , users.results.login.password
+     , users.results.login.salt
+     , users.results.login.md5
+     , users.results.login.sha1
+     , users.results.login.sha256
+     , users.results.dob.date as dob
+     , users.results.registered.date as registered
+     , users.results.phone
+     , users.results.cell
+     , users.results.picture.large
+     , users.results.picture.medium
+     , users.results.picture.thumbnail
+     , users.results.nat
+ FROM csvms.randomuser
+CROSS JOIN UNNEST(randomuser.results) AS users (results)
+;
+
+-- https://prestodb.io/docs/0.217/functions/json.html
+CREATE EXTERNAL TABLE csvms.text_randomuser (
+    results STRING
+)
+STORED AS TEXTFILE
+LOCATION 's3://compass.uol.bootcamp/locations';
