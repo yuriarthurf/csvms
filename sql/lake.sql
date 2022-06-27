@@ -192,11 +192,11 @@ SELECT users.results.gender
 CROSS JOIN UNNEST(randomuser.results) AS users (results)
 ;
 
---aws s3 sync bootcamp/sql/locations s3://compass.uol.bootcamp/locations
+--aws s3 sync bootcamp/sql/locals s3://compass.uol.bootcamp/locals
 CREATE EXTERNAL TABLE csvms.raw_locations (
     results STRING)
 STORED AS TEXTFILE
-LOCATION 's3://compass.uol.bootcamp/locations';
+LOCATION 's3://compass.uol.bootcamp/locals';
 
 -- https://prestodb.io/docs/0.217/functions/json.html
 CREATE OR REPLACE VIEW csvms.locations AS
