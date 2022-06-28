@@ -4,7 +4,7 @@ First of all, thank you for taking the time to contribute to this project. We've
 
 ## :innocent: Code of Conduct
 
-This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to any member of our **administration team**.
+This project and everyone participating in it is governed by the [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to any member of our [**administration team**](@Didone).
 
 ## :octocat: How to getting started
 
@@ -12,18 +12,16 @@ We recommend to install the following tools before start:
 
 - [Python](https://www.python.org/downloads/)
 - [Poetry](https://python-poetry.org/)
-- [PyTest](https://docs.pytest.org/en/6.2.x/index.html)
-- [Pylint](https://pylint.org/)
 
 ### Environments
 
 After clone this repository, use [Poetry](https://python-poetry.org/) to create your virtual environment.
 
 ```bash
-# Install all dependencies
-poetry install
 # Activate your virtual environment
 poetry shell
+# Install all dependencies
+poetry install
 ```
 
 ### Writing code
