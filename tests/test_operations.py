@@ -44,3 +44,21 @@ def test_inserct():
             "desc": "text",
             "valor": "float"}}
     assert [r for r in (A % B)] == [(1,"a",0.55)]
+
+def test_diff():
+    """Test diff operator"""
+    assert (A - B).definition == {
+        "name": "mock.(A−B)",
+        "columns": {
+            "chave": "integer",
+            "desc": "text",
+            "valor": "float"}}
+    assert [r for r in (A - B)] == [(3,"c",9.99)]
+
+    assert (B - A).definition == {
+        "name": "mock.(B−A)",
+        "columns": {
+            "chave": "integer",
+            "desc": "text",
+            "valor": "float"}}
+    assert [r for r in (B - A)] == [(2,"b",1.05)]
