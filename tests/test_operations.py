@@ -128,6 +128,14 @@ def test_extended_projection():
     assert [r for r in A.Π({'sub':['valor',2]})] == [(1,'a',0.55,-1.45),(3,'c',None,None)]
     assert [r for r in A.Π({'div':['valor',2]})] == [(1, 'a', 0.55, 0.275),(3,'c',None,None)]
     assert [r for r in A.Π({'mul':['valor',2]})] == [(1,'a',0.55,1.1),(3,'c',None,None)]
+    if Table.functions.get('concat') is not None:
+        assert [r for r in A.Π({'concat':['desc','valor']})] == [
+            (1,'a',0.55,'a0.55'),
+            (3,'c',None,None)]
+    if Table.functions.get('pow') is not None:
+        assert [r for r in A.Π({'pow':['chave',8]})] == [
+            (1,'a',0.55,1),
+            (3,'c',None,6561)]
 
 def test_rename_projection():
     """Test rename projection operator"""

@@ -55,9 +55,7 @@ class Table():
         'div': lambda x,y: None if x is None or y is None else x/y,
         'mul': lambda x,y: None if x is None or y is None else x*y,
         #TODO: Concatenate two string
-        'concat': NotImplementedError,
         #TODO: Raises expr1 to the power of expr2.
-        'pow': NotImplementedError,
     }
     # All logical operations are also supported as function
     functions.update(operations)
