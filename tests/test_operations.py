@@ -118,3 +118,19 @@ def test_projection():
         'name': 'mock.(Aπ)',
         'columns': {'key': 'integer'}}
     assert [r for r in A.π([{'value':'chave','name':'key'}])] == [(1,), (3,)]
+
+def test_extended_projection():
+    """Test extended projection operator"""
+    assert A.Π(100,'%').definition == {
+        'name': 'mock.(AΠ)',
+        'columns': {
+            'chave': 'integer',
+            'desc': 'text',
+            'valor': 'float',
+            '%': 'integer'}}
+    assert [r for r in A.Π(100,'%')] == [(1,"a",0.55,100),(3,"c",None,100)]
+    assert [r for r in A.Π({'add':['valor',2]})] == [(1,'a',0.55,2.55),(3,'c',None,None)]
+    assert [r for r in A.Π({'sub':['valor',2]})] == [(1,'a',0.55,-1.45),(3,'c',None,None)]
+    assert [r for r in A.Π({'div':['valor',2]})] == [(1, 'a', 0.55, 0.275),(3,'c',None,None)]
+    assert [r for r in A.Π({'mul':['valor',2]})] == [(1,'a',0.55,1.1),(3,'c',None,None)]
+
