@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "csvms"
-version = "0.2.7"
+version = "0.2.8"
 description = "Comma-separated values management system"
 authors = ["Didone <tiago.didone@compasso.com.br>"]
 readme = "README.md"
@@ -18,7 +18,9 @@ autopep8 = "^1.6.0"
 pylint = "^2.13.9"
 ipykernel = "^6.15.0"
 pyspark = "^3.3.0"
+# SQL Parser
 mo-sql-parsing = "^8.185.22160"
+# CLI Parser
 docopt = "^0.6.2"
 
 [build-system]
