@@ -1,5 +1,5 @@
 """Test join operations"""
-
+import warnings
 from tests.test_operations import A, B
 
 def test_inner_join_projection():
@@ -30,7 +30,7 @@ def test_left_outer_join():
             (1, 'a', 0.55, 1, 'a', 0.55),
             (3, 'c', None, None, None, None)]
     except AttributeError:
-        assert True
+        warnings.warn(UserWarning('Not implemented'))
 
 def test_right_outer_join():
     """Test right outer join operator"""
@@ -39,4 +39,14 @@ def test_right_outer_join():
             (1, 'a', 0.55, 1, 'a', 0.55),
             (None, None, None, 2, 'b', 1.05)]
     except AttributeError:
-        assert True
+        warnings.warn(UserWarning('Not implemented'))
+
+def test_full_outer_join():
+    """Test full outer join operator"""
+    try:
+        assert [r for r in A.ᗌᗏ(B, where={'eq':['A.chave','B.chave']})] == [
+            (1, 'a', 0.55, 1, 'a', 0.55),
+            (3, 'c', None, None, None, None),
+            (None, None, None, 2, 'b', 1.05)]
+    except AttributeError:
+        warnings.warn(UserWarning('Not implemented'))
