@@ -67,6 +67,12 @@ tests/test_schema.py ...                                                        
 
 Every chunk of code that may be hard to understand has some comments above it. If you write some new code or change some part of the existing code in a way that it would not be functional without changing it's usages, it needs to be documented.
 
+To generate the full documentation use: 
+
+```bash
+pdoc --html csvms -o docs --force
+```
+
 ### Code conventions
 
 - [Python](https://www.python.org/dev/peps/pep-0008/)
