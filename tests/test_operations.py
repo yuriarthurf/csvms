@@ -1,5 +1,6 @@
 """Test Operators"""
 from csvms.table import Table
+from tomlkit import value
 
 A = Table(
     name="pytest.A",
@@ -83,7 +84,6 @@ def test_product():
 
 def test_selection():
     """Test selection operator"""
-    # A.σ({'and':[{"eq":['Manager','George']},{"lt":['DeptId',2]}]})
     assert A.σ({"eq":['chave',1]}).definition == {
         'name': 'mock.(Aσ)',
         'columns': {
@@ -108,3 +108,13 @@ def test_selection():
     assert [r for r in A.σ({"in":['desc','ab']})] == [(1,"a",0.55)]
     assert [r for r in A.σ({"nin":['desc','ab']})] == [(3,"c",None)]
 
+def test_projection():
+    """Test projection operator"""
+    assert A.π([{'value':'chave'}]).definition == {
+        'name': 'mock.(Aπ)',
+        'columns': {'chave': 'integer'}}
+    assert [r for r in A.π([{'value':'chave'}])] == [(1,), (3,)]
+    assert A.π([{'value':'chave','name':'key'}]).definition == {
+        'name': 'mock.(Aπ)',
+        'columns': {'key': 'integer'}}
+    assert [r for r in A.π([{'value':'chave','name':'key'}])] == [(1,), (3,)]
