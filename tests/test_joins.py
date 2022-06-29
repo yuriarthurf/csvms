@@ -31,3 +31,12 @@ def test_left_outer_join():
             (3, 'c', None, None, None, None)]
     except AttributeError:
         assert True
+
+def test_right_outer_join():
+    """Test right outer join operator"""
+    try:
+        assert [r for r in A.ᐅᗏ(B, where={'eq':['A.chave','B.chave']})] == [
+            (1, 'a', 0.55, 1, 'a', 0.55),
+            (None, None, None, 2, 'b', 1.05)]
+    except AttributeError:
+        assert True
