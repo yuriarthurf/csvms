@@ -11,17 +11,21 @@ keywords = ["bootcamp","csv","dbms","database","relational-algebra"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+ipykernel = "^6.15.0"
+pyspark = "^3.3.0"
+mo-sql-parsing = "^8.185.22160"
+docopt = "^0.6.2"
+
+[tool.poetry.extras]
+dev-ipykernel = ["ipykernel"]
+dev-pyspark = ["pyspark"]
+dev-mo-sql-parsing = ["mo-sql-parsing"]
+dev-docopt = ["docopt"]
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 autopep8 = "^1.6.0"
 pylint = "^2.13.9"
-ipykernel = "^6.15.0"
-pyspark = "^3.3.0"
-# SQL Parser
-mo-sql-parsing = "^8.185.22160"
-# CLI Parser
-docopt = "^0.6.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
