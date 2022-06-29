@@ -5,8 +5,14 @@ CREATE TABLE lista_frutas (
 ;
 INSERT INTO lista_frutas VALUES ('banana','doce');
 INSERT INTO lista_frutas VALUES ('limão','amargo');
-INSERT INTO lista_frutas VALUES ('bergamota','azedo');
+INSERT INTO lista_frutas VALUES ('mexerica','doce');
 INSERT INTO lista_frutas VALUES ('maçã','doce');
+
+-- Corrige o cadastro
+UPDATE lista_frutas
+   SET nm_fruta = 'bergamota'
+     , tp_fruta = 'azedo'
+ WHERE nm_fruta = 'mexerica';
 
 -- Tipos
 CREATE TABLE tipo_frutas (
@@ -14,8 +20,13 @@ CREATE TABLE tipo_frutas (
     vl_fruta FLOAT);
 
 INSERT INTO tipo_frutas VALUES ('doce',1.5);
-INSERT INTO tipo_frutas VALUES ('azedo',2.5);
+INSERT INTO tipo_frutas VALUES ('azedo',2.3);
 INSERT INTO tipo_frutas VALUES ('amargo',2.0);
+
+-- Atualiza o valor das frutas azedas
+UPDATE tipo_frutas
+   SET vl_fruta = 2.5
+ WHERE tp_fruta = 'azedo';
 
 -- Vendas
 CREATE TABLE venda_frutas (
