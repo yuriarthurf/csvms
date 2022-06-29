@@ -134,3 +134,13 @@ def test_extended_projection():
     assert [r for r in A.Π({'div':['valor',2]})] == [(1, 'a', 0.55, 0.275),(3,'c',None,None)]
     assert [r for r in A.Π({'mul':['valor',2]})] == [(1,'a',0.55,1.1),(3,'c',None,None)]
 
+def test_rename_projection():
+    """Test rename projection operator"""
+    assert A.ρ("C").definition == {
+        'name': 'mock.C',
+        'columns': {
+            'chave': 'integer',
+            'desc': 'text',
+            'valor': 'float'
+        }
+    }
