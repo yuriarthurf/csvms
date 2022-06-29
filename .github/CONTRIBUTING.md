@@ -70,7 +70,7 @@ Every chunk of code that may be hard to understand has some comments above it. I
 To generate the full documentation use: 
 
 ```bash
-pdoc --html csvms -o docs --force
+pdoc --html csvms -o docs --force --filter catalog,exceptions,schema,table
 ```
 
 ### Code conventions

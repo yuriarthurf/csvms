@@ -1,4 +1,4 @@
-""" Database Module """
+""" Schema Module """
 from pathlib import Path
 from os import makedirs
 from os import environ

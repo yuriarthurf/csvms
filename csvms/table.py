@@ -1,4 +1,4 @@
-""" Database catalog """
+""" Table Module """
 import json
 import re
 from csv import reader, writer
@@ -6,7 +6,7 @@ from datetime import datetime
 from os import remove, makedirs
 from os.path import exists
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Any
 # Local module
 from csvms import logger
 from csvms.schema import Database
@@ -16,15 +16,78 @@ from csvms.exceptions import TableException
 
 # Init log
 log = logger()
-# Rename column
-rnm = lambda t,c:c if str(c).find('.')!=-1 else f"{t}.{c}"
-# Check for None values
-NaN = lambda z:False if z is None else z
+
+def rnm(table:str, column:str) -> str:
+    """Rename table column
+
+    Parameters
+    ----------
+    table:`str`
+        Table name
+
+    column:`str`
+        Column name
+
+    Returns
+    ----------
+    `str`
+        Column renamed
+    """
+    if str(column).find('.')!=-1:
+        return column
+    return f"{table}.{column}"
+
+def _nan_(value:Any) -> bool:
+    """
+    Check for None values
+
+    Parameters
+    ----------
+    value:`Any`
+        The value to check
+
+    Returns
+    ----------
+    bool:
+        False if value is None
+    """
+    if value is None:
+        return False
+    return value
 
 class Table():
-    """Represents a collection of tuples as table"""
-    FORMAT="csv" # Data file format
-    CSVSEP=";"   # Separator
+    """
+    Represents a collection of tuples as table
+
+    Class variables
+    ----------
+    dtypes : `Dict[str,type]`
+        Supported columns data types
+
+    operations : `Dict[str,Callable]`
+        Supported operator on selection operations
+
+    functions : `Dict[str,Callable]`
+        Supported functions on extended operations
+
+    Attributes
+    ----------
+    name : `str`
+        Table name identifier
+
+    database : `Database`
+        Database where the table are located
+
+    columns : `Dict[str,type]`
+        Table attributes
+
+    temporary : `bool`
+        True if table is temporary.
+        Important: Temporary table can't be save on disk
+
+    """
+    _FORMAT_="csv" # Data file format
+    _CSVSEP_=";"   # Separator
     # Supported data types
     dtypes = {
         "string":str,
@@ -35,17 +98,17 @@ class Table():
         "boolean":bool}
     # Supported operations
     operations = {
-        'lt'     :lambda x,y:NaN(x) < NaN(y),
-        'gt'     :lambda x,y:NaN(x) > NaN(y),
-        'eq'     :lambda x,y:NaN(x) == NaN(y),
-        'lte'    :lambda x,y:NaN(x) <= NaN(y),
-        'gte'    :lambda x,y:NaN(x) >= NaN(y),
-        'neq'    :lambda x,y:NaN(x) != NaN(y),
-        'is'     :lambda x,y:NaN(x) is NaN(y),
-        'in'     :lambda x,y:NaN(x) in NaN(y),
-        'nin'    :lambda x,y:NaN(x) not in NaN(y),
-        'or'     :lambda x,y:NaN(x) or NaN(y),
-        'and'    :lambda x,y:NaN(x) and NaN(y),
+        'lt'     :lambda x,y:_nan_(x) < _nan_(y),
+        'gt'     :lambda x,y:_nan_(x) > _nan_(y),
+        'eq'     :lambda x,y:_nan_(x) == _nan_(y),
+        'lte'    :lambda x,y:_nan_(x) <= _nan_(y),
+        'gte'    :lambda x,y:_nan_(x) >= _nan_(y),
+        'neq'    :lambda x,y:_nan_(x) != _nan_(y),
+        'is'     :lambda x,y:_nan_(x) is _nan_(y),
+        'in'     :lambda x,y:_nan_(x) in _nan_(y),
+        'nin'    :lambda x,y:_nan_(x) not in _nan_(y),
+        'or'     :lambda x,y:_nan_(x) or _nan_(y),
+        'and'    :lambda x,y:_nan_(x) and _nan_(y),
         'missing':lambda   x:x is None,
         'exists' :lambda   x:x is not None}
     # Supported functions
@@ -57,19 +120,54 @@ class Table():
         #TODO: Concatenate two string
         #TODO: Raises expr1 to the power of expr2.
     }
-    # All logical operations are also supported as function
-    functions.update(operations)
     # Supported operations reverse
-    strtypes = {value:key for key, value in dtypes.items()}
+    _strtypes_ = {value:key for key, value in dtypes.items()}
 
-    def __init__(self, name:str, columns:Dict[str,type]=None, data:List[tuple]=None, temp:bool=False):
-        """Table representation and the data file using database location path to store all rows
-        :param name: Table identifier composed by database name and the table name separated by '.'
-                     If the database name was omitted, uses the default database instead
-        :param columns: Dictionary with columns names and data types
-        :param data: Load table tuples into table rows. If 'None' load from data file. Default is 'None'
-        :param temp: If 'False' create datafile, other else the rows will be available only on python memory.
-                     Default 'False'
+    def __init__(self, name:str, columns:Dict[str,type]=None,
+        data:List[tuple]=None, temp:bool=False):
+        """
+        Table representation and the data file using database location path to store all rows
+
+        Parameters
+        ----------
+        name : `str`
+            Table identifier composed by database name and the table name separated by '.'
+            If the database name was omitted, uses the default database instead
+
+        columns : `Dict[str,type]`, `optional`
+            Dictionary with columns names and data types. Only python primitive type are alowed.
+            If None, load from catalog definition. *Default is None*
+
+            #### Example
+
+            ```
+            Table(
+                name='sample',
+                columns={
+                    'att1':str,
+                    'att2':int})
+            ```
+
+        data : `List[tuple]`, `optional`
+            Load table tuples into table rows. If None load from data file. *Default is None*
+
+            #### Example
+
+            ```
+            Table(
+                name='sample',
+                columns={
+                    'att1':str,
+                    'att2':int},
+                data=[
+                    ('a',1),
+                    ('b',2)])
+            ```
+
+        temp : `bool`, `optional`
+            If 'False' create datafile, other else the rows will be available only on python memory.
+            *Default False*
+
         """
         if data is None:
             data = list()
@@ -87,15 +185,30 @@ class Table():
             raise TableException("Table not found")
 
     @classmethod
-    def op_ts(cls) -> str:
-        """Return a formatted timestamp"""
+    def _op_ts_(cls) -> str:
+        """
+        Get the system date time and format
+
+        Returns
+        ----------
+        str:
+            Return a formatted timestamp
+        """
         return datetime.today().isoformat().replace('T',' ')
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
         """Condition parser
-        :param exp: String with operation
-        :return: List with operation name and value
+
+        Parameters
+        ----------
+        exp:`str`
+            String with operation
+
+        Returns
+        ----------
+        List[str]:
+            List with operation name and value
         """
         ops = '|'.join(Table.operations.keys())
         match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
@@ -111,13 +224,13 @@ class Table():
         """Return table definition as dictionary"""
         return dict(
             name=self.full_name,
-            columns = {key: Table.strtypes[val] for key, val in self.columns.items()}
+            columns = {key: Table._strtypes_[val] for key, val in self.columns.items()}
         )
 
     @property
     def location(self) -> str:
         """Return table location on file system as string"""
-        return f"{self.database.location}/{self.name}.{Table.FORMAT}"
+        return f"{self.database.location}/{self.name}.{Table._FORMAT_}"
 
     @property
     def empty_row(self) -> tuple:
@@ -154,7 +267,7 @@ class Table():
         definition = self.database.catalog[self.full_name]
         self.columns = {key:Table.dtypes[value] for key, value in definition["columns"].items()}
         with open(self.location, mode='r', encoding="utf-8") as csv_file:
-            for raw in reader(csv_file, delimiter=Table.CSVSEP):
+            for raw in reader(csv_file, delimiter=Table._CSVSEP_):
                 row = list()
                 for idx, col in enumerate(self.columns.values()):
                     row.append(col(raw[idx]))
@@ -165,7 +278,7 @@ class Table():
         if self.temporary:
             raise TableException("Can't save temporary tables")
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
-            csv_writer = writer(csv_file, delimiter=Table.CSVSEP, quotechar='"')
+            csv_writer = writer(csv_file, delimiter=Table._CSVSEP_, quotechar='"')
             for row in self._rows:
                 csv_writer.writerow(row)
         self.database.catalog[self.full_name] = self.definition
@@ -336,7 +449,7 @@ class Table():
         :return: True if table insertion was succeeded
         """
         self._rows.append(self._validade_(values))
-        self._redo_(('I',(Table.op_ts()))+tuple(values))
+        self._redo_(('I',(Table._op_ts_()))+tuple(values))
         log.info("Row inserted")
         return True
 
@@ -346,7 +459,7 @@ class Table():
         :param value: New values to the row
         """
         self._rows[idx] = self._validade_(value)
-        self._redo_(('U',(Table.op_ts()))+tuple(value))
+        self._redo_(('U',(Table._op_ts_()))+tuple(value))
         log.info("Row updated")
         return True
 
@@ -354,7 +467,7 @@ class Table():
         """Remove line from table
         :param idx: Row table index to delete
         """
-        self._redo_(('D',(Table.op_ts()))+self._rows[idx])
+        self._redo_(('D',(Table._op_ts_()))+self._rows[idx])
         del self._rows[idx]
         log.info("Row deleted")
 
@@ -516,17 +629,19 @@ class Table():
         """Selection Operator (σ)
         :param condition: A expression composed by the logic operation and list of values.
                           See 'operations' dictionary to get the list of valid options
-        # Exemples
-        ## where id < 2
-        > where({'lt':['id',2]})
-        ## where val = 'George' and id > 1
-        > where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})
+        ### Exemples
 
-        # Operations
-        ## List of supported operations and the logical equivalent python evaluation
-        +---------+-------------+
+        where id < 2
+        `where({'lt':['id',2]})`
+
+        where val = 'George' and id > 1
+        `where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})`
+
+        ### Operations
+        List of supported operations and the logical equivalent python evaluation
+
         | Name    | Python eval |
-        +---------+-------------+
+        |---------|-------------|
         | lt      | <           |
         | gt      | >           |
         | eq      | ==          |
@@ -540,7 +655,7 @@ class Table():
         | and     | and         |
         | missing | is None     |
         | exists  | is not None |
-        +---------+-------------+
+
         """
         rows = list()
         for idx, row in enumerate(self):
@@ -564,12 +679,12 @@ class Table():
     def ρ(self, alias:str) -> "Table":
         """Rename Operator (ρ)"""
         # Function to rename column names for the new table name
-        _rnm = lambda x: x if x.count('.')==0 else x.split('.')[-1]
+        rename = lambda x: x if x.count('.')==0 else x.split('.')[-1]
         return Table(
             # Set new table name
             name = f"{alias}",
             # Copy all columns from source table
-            columns={_rnm(k):v for k,v in self.columns.items()},
+            columns={rename(k):v for k,v in self.columns.items()},
             # Copy all rows from source table
             data=[r for r in self])
 

@@ -1,4 +1,4 @@
-"""CSVMS Exception classes"""
+"""Exception Module"""
 from csvms import logger
 log = logger()
 
