@@ -1,4 +1,4 @@
---aws s3 sync bootcamp/examples/data/log s3://compass.uol.bootcamp/sql
+--aws s3 sync docs/data/log s3://compass.uol.bootcamp/sql
 -- https://docs.aws.amazon.com/pt_br/athena/latest/ug/data-types.html
 CREATE EXTERNAL TABLE csvms.raw_lista_frutas(
     op string, 
@@ -82,9 +82,21 @@ SELECT t.tp_fruta tipo
      , sum(if(v.qtd_venda IS NULL,0,v.qtd_venda) * t.vl_fruta) total
   FROM tipo_frutas t
   LEFT OUTER JOIN lista_frutas l ON t.tp_fruta = l.tp_fruta
-  LEFT OUTER JOIN venda_frutas v ON l.nm_fruta = l.nm_fruta
+  LEFT OUTER JOIN venda_frutas v ON v.nm_fruta = l.nm_fruta
  GROUP BY t.tp_fruta
  ORDER BY 2 desc
+;
+
+-- Pivotando a tabela
+--reduce_agg(inputValue T, initialState S, inputFunction(S, T, S), combineFunction(S, S, S)) → S
+SELECT reduce(agg['amargo'], 0.0, (s, x) -> s + x, s -> s) AS "amargo"
+     , reduce(agg['azedo'], 0.0, (s, x) -> s + x, s -> s) AS "azedo"
+     , reduce(agg['doce'], 0.0, (s, x) -> s + x, s -> s) AS "doce"
+  FROM (
+  SELECT multimap_agg(t.tp_fruta, if(v.qtd_venda IS NULL,0,v.qtd_venda) * t.vl_fruta) agg
+  FROM tipo_frutas t
+  LEFT OUTER JOIN lista_frutas l ON t.tp_fruta = l.tp_fruta
+  LEFT OUTER JOIN venda_frutas v ON l.nm_fruta = v.nm_fruta) vendas
 ;
 
 -- EXPLAIN
