@@ -67,10 +67,10 @@ tests/test_schema.py ...                                                        
 
 Every chunk of code that may be hard to understand has some comments above it. If you write some new code or change some part of the existing code in a way that it would not be functional without changing it's usages, it needs to be documented.
 
-To generate the full documentation use: 
+To generate the full local documentation use: 
 
 ```bash
-pdoc --html csvms -o docs --force --filter catalog,exceptions,schema,table
+pdoc --html csvms -o docs
 ```
 
 ### Code conventions
