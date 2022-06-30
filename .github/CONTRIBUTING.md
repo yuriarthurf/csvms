@@ -53,10 +53,12 @@ pytest --pdb
 ================================== test session starts ===================================
 platform linux -- Python 3.8.10, pytest-5.4.3, py-1.11.0, pluggy-0.13.1
 rootdir: bootcamp/sql/csvms
-collected 6 items
+collected 23 items                                                                        
 
-tests/test_project.py ...                                                          [ 50%]
-tests/test_schema.py ...                                                           [100%]
+tests/test_joins.py .....                                                           [ 21%]
+tests/test_operations.py ..........                                                 [ 65%]
+tests/test_project.py ...                                                           [ 78%]
+tests/test_schema.py .....                                                          [100%]
 
 =================================== 6 passed in 0.23s ====================================
 ```
