@@ -16,3 +16,4 @@ csvms/engine.py
 cli
 csvms/__main__.py
 csvms/extended.py
+tests/test_scripts.py
