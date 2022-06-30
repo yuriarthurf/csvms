@@ -90,7 +90,7 @@ SELECT t.tp_fruta tipo
 -- https://prestodb.io/docs/current/functions/window.html
 SELECT l.nm_fruta
      , sum(v.qtd_venda) total_vendas
-     , rank() OVER (ORDER BY sum(v.qtd_venda) DESC)
+     , rank() OVER (ORDER BY sum(v.qtd_venda) DESC) ranking
   FROM csvms.lista_frutas l
   LEFT OUTER JOIN csvms.venda_frutas v ON v.nm_fruta = l.nm_fruta
  GROUP BY l.nm_fruta
