@@ -182,14 +182,12 @@ This are the current operations supported:
 |**∪**|+|Union|A + B|
 |**∩**|%|Intersection|A % B|
 |**-**|-|Difference|A – B|
-|**×**| * |Product|A * B|
+|**×**|*|Product|A * B|
 |**π**|π|Project|A.π(`<attribute list>`)|
 |**σ**|σ|Select|A.σ([`<logic functions>`])|
-|**⋈**|ᐅᐊ|Join|A.ᐅᐊ( B, `<logic functions>` )|
 |**ρ**|ρ|Rename|A.ρ(`name`)|
 |**Π**|Π|Extend|A.Π(`<arithmetic functions>`)|
-|**⟕**|ᗌᐊ|Left Outer Join|A.ᗌᐊ( B, `<logic functions>` )|
-|**⟖**|ᐅᗏ|Right Outer Join|A.ᐅᗏ( B, `<logic functions>` )|
+|**⋈**|ᐅᐊ|Join|A.ᐅᐊ( B, `<logic functions>` )|
 
 ### Database
 
