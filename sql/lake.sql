@@ -87,6 +87,14 @@ SELECT t.tp_fruta tipo
  ORDER BY 2 desc
 ;
 
+-- https://prestodb.io/docs/current/functions/window.html
+SELECT l.nm_fruta
+     , sum(v.qtd_venda) total_vendas
+     , rank() OVER (ORDER BY sum(v.qtd_venda) DESC)
+  FROM csvms.lista_frutas l
+  LEFT OUTER JOIN csvms.venda_frutas v ON v.nm_fruta = l.nm_fruta
+ GROUP BY l.nm_fruta
+;
 -- Pivotando a tabela
 --reduce_agg(inputValue T, initialState S, inputFunction(S, T, S), combineFunction(S, S, S)) → S
 SELECT reduce(agg['amargo'], 0.0, (s, x) -> s + x, s -> s) AS "amargo"
