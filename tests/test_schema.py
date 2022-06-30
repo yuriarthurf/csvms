@@ -38,7 +38,7 @@ def test_table_data(tbl):
 
 def test_imput_output(tbl):
     """ Teste table Imput and Outup """
-    assert tbl.location == f"{tbl.database.location}/{tbl.name}.{Table.FORMAT}"
+    assert tbl.location == f"{tbl.database.location}/{tbl.name}.{Table._FORMAT_}"
     assert tbl.save()
     assert exists(tbl.database.catalog.location)
     assert tbl.database.catalog[tbl.full_name] == {
