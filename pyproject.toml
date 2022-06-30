@@ -9,9 +9,9 @@ homepage = "https://didone.github.io/csvms/"
 repository = "https://github.com/Didone/csvms.git"
 keywords = ["bootcamp","csv","dbms","database","relational-algebra"]
 classifiers = [
+    "Topic :: Database",
     "Topic :: Software Development :: Build Tools",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: Database"
+    "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
 [tool.poetry.dependencies]
