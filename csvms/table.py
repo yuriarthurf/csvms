@@ -186,7 +186,7 @@ class Table():
             if exists(self.location):
                 self._rows = list(self.load())
         if self.columns is None:
-            raise TableException("Table not found")
+            raise TableException(f"Table {name} not found")
 
     @classmethod
     def _op_ts_(cls) -> str:
@@ -458,7 +458,7 @@ class Table():
         """
         self._rows.append(self._validade_(values))
         self._redo_(('I',(Table._op_ts_()))+tuple(values))
-        log.info("Row inserted")
+        log.info("Row %s inserted", values)
         return True
 
     def __setitem__(self, idx:int, value:tuple) -> bool:
@@ -468,16 +468,17 @@ class Table():
         """
         self._rows[idx] = self._validade_(value)
         self._redo_(('U',(Table._op_ts_()))+tuple(value))
-        log.info("Row updated")
+        log.info("Row %s updated with values %s", idx, value)
         return True
 
     def __delitem__(self, idx) -> None:
         """Remove line from table
         :param idx: Row table index to delete
         """
-        self._redo_(('D',(Table._op_ts_()))+self._rows[idx])
+        data = self._rows[idx]
+        self._redo_(('D',(Table._op_ts_()))+data)
         del self._rows[idx]
-        log.info("Row deleted")
+        log.info("Row %s deleted", data)
 
     def __getitem__(self, key):
         """Return rows as Dict"""
