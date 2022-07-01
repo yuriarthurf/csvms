@@ -169,8 +169,7 @@ class Table():
             *Default False*
 
         """
-        if data is None:
-            data = list()
+        self.journal = list()
         self.temporary = temp
         _db = None
         self.name = name
@@ -178,9 +177,14 @@ class Table():
             _db, self.name = name.split('.')
         self.database = Database(_db, temp)
         self.columns = columns
-        self._rows = data
-        if exists(self.location):
-            self._rows = list(self.load())
+        if data is not None:
+            self._rows = data
+            for row in data:
+                self._redo_(('I',(Table._op_ts_()))+row)
+        else:
+            self._rows = list()
+            if exists(self.location):
+                self._rows = list(self.load())
         if self.columns is None:
             raise TableException("Table not found")
 
@@ -244,11 +248,7 @@ class Table():
 
     def _redo_(self, values:tuple) -> bool:
         """Write transaction redo log file"""
-        makedirs(self.transaction_log, exist_ok=True)
-        log_file = self.transaction_log.joinpath("redo")
-        with open(log_file, mode='a', encoding="utf-8") as redolog:
-            writer(redolog).writerow(values)
-        return True
+        self.journal.append(values)
 
     def _value_(self, row:tuple, key:str):
         """Get valeu from row by column name if it's a columnn identifier
@@ -277,6 +277,14 @@ class Table():
         """Write data to file system"""
         if self.temporary:
             raise TableException("Can't save temporary tables")
+        # Transaction log
+        makedirs(self.transaction_log, exist_ok=True)
+        log_file = self.transaction_log.joinpath("redo")
+        with open(log_file, mode='a', encoding="utf-8") as redolog:
+            for values in self.journal:
+                writer(redolog).writerow(values)
+            self.journal = list()
+        # Table data
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
             csv_writer = writer(csv_file, delimiter=Table._CSVSEP_, quotechar='"')
             for row in self._rows:
