@@ -5,7 +5,7 @@ from os import environ
 
 def logger(identifier:str=None):
     """CSVMS Logger"""
-    logging.basicConfig()
+    logging.basicConfig(format="%(asctime)s: %(message)s")
     if identifier is None:
         identifier = __name__
     log = logging.getLogger(identifier)
