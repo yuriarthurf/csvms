@@ -458,7 +458,8 @@ class Table():
         """
         self._rows.append(self._validade_(values))
         self._redo_(('I',(Table._op_ts_()))+tuple(values))
-        log.info("Row %s inserted", values)
+        if not self.temporary:
+            log.info("Row %s inserted", values)
         return True
 
     def __setitem__(self, idx:int, value:tuple) -> bool:
@@ -468,7 +469,8 @@ class Table():
         """
         self._rows[idx] = self._validade_(value)
         self._redo_(('U',(Table._op_ts_()))+tuple(value))
-        log.info("Row %s updated with values %s", idx, value)
+        if not self.temporary:
+            log.info("Row %s updated with values %s", idx, value)
         return True
 
     def __delitem__(self, idx) -> None:
@@ -478,7 +480,8 @@ class Table():
         data = self._rows[idx]
         self._redo_(('D',(Table._op_ts_()))+data)
         del self._rows[idx]
-        log.info("Row %s deleted", data)
+        if not self.temporary:
+            log.info("Row %s deleted", data)
 
     def __getitem__(self, key):
         """Return rows as Dict"""
