@@ -3,6 +3,8 @@ import logging
 import re
 from os import environ
 
+__version__ = '0.2.9'
+
 def logger(identifier:str=None):
     """CSVMS Logger"""
     logging.basicConfig(format="%(asctime)s: %(message)s")
@@ -12,7 +14,6 @@ def logger(identifier:str=None):
     log.setLevel(getattr(logging, environ.get('LOG_LEVEL', 'INFO')))
     return log
 
-__version__ = '0.2.8'
 logger().debug("version:%s", __version__)
 
 def pyproject(location:str) -> dict():
