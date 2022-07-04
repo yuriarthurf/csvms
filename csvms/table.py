@@ -1,5 +1,6 @@
 """ Table Module """
 import json
+import pickle
 import re
 from csv import reader, writer
 from datetime import datetime
@@ -13,6 +14,7 @@ from csvms.schema import Database
 from csvms.exceptions import ColumnException
 from csvms.exceptions import DataException
 from csvms.exceptions import TableException
+from csvms.index import Node
 
 # Init log
 log = logger()
@@ -54,6 +56,40 @@ def _nan_(value:Any) -> bool:
     if value is None:
         return False
     return value
+
+class Index():
+    """Represents a table index"""
+    def __init__(self, name:str, table:"Table", attribute:str) -> None:
+        """Create index from table"""
+        self.name = name
+        self.attribute = attribute
+        self.location = f"{table.database.location}/.index/{table.name}"
+        self.tree:Node = None
+        self.tree = self._tree_(table)
+        table.add_index(self)
+
+    def _tree_(self, table:"Table") -> Node:
+        """Create index tree"""
+        _root:Node = None
+        for idx, _ in enumerate(table):
+            key = table[idx][self.attribute]
+            if _root is None:
+                _root = Node(key, idx)
+            else:
+                _root.insert(key, idx)
+        return _root
+
+    def update(self, table:"Table") -> "Index":
+        """Update index"""
+        self.tree = self._tree_(table)
+        return self
+
+    def search(self, key) -> Node:
+        """Index search"""
+        try:
+            return self.tree.search(key).data
+        except ValueError as err:
+            log.error(err)
 
 class Table():
     """
@@ -169,6 +205,7 @@ class Table():
             *Default False*
 
         """
+        self.index = dict()
         self.journal = list()
         self.temporary = temp
         _db = None
@@ -228,7 +265,8 @@ class Table():
         """Return table definition as dictionary"""
         return dict(
             name=self.full_name,
-            columns = {key: Table._strtypes_[val] for key, val in self.columns.items()}
+            columns = {k: Table._strtypes_[v] for k, v in self.columns.items()},
+            indexes= {k:v.location for k,v in self.index.items()}
         )
 
     @property
@@ -259,13 +297,23 @@ class Table():
             return row[key]
         return key
 
+    def add_index(self, index:"Index"):
+        """Add index to table"""
+        self.index.update({index.name:index})
+
     def load(self) -> List[tuple]:
         """Load csv file from path with column formats
         :param table_id: Table full name
         :return: Tuple iterator
         """
         definition = self.database.catalog[self.full_name]
+        # Load column definitions
         self.columns = {key:Table.dtypes[value] for key, value in definition["columns"].items()}
+        # Load indexes
+        for key, value in definition["indexes"].items():
+            with open(f"{value}/{key}", 'rb') as index:
+                self.index.update({key:pickle.load(index)})
+        # Load data
         with open(self.location, mode='r', encoding="utf-8") as csv_file:
             for raw in reader(csv_file, delimiter=Table._CSVSEP_):
                 row = list()
@@ -277,6 +325,7 @@ class Table():
         """Write data to file system"""
         if self.temporary:
             raise TableException("Can't save temporary tables")
+
         # Transaction log
         makedirs(self.transaction_log, exist_ok=True)
         log_file = self.transaction_log.joinpath("redo")
@@ -284,6 +333,15 @@ class Table():
             for values in self.journal:
                 writer(redolog).writerow(values)
             self.journal = list()
+
+        # Save table index
+        for name, idx in self.index.items():
+            idx_location = Path(idx.location)
+            makedirs(idx_location, exist_ok=True)
+            idx_file = idx_location.joinpath(name)
+            with open(idx_file, mode='wb') as index:
+                pickle.dump(idx.update(self), index)
+
         # Table data
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
             csv_writer = writer(csv_file, delimiter=Table._CSVSEP_, quotechar='"')
