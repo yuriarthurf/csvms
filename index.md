@@ -15,6 +15,7 @@ No primeiro dia de *bootcamp* iremos explorar as operações de definição, man
 + Linguagem de definição de dados
 + Linguagem de manipulação de dados
 + Linguagem de transação de dados
++ Índices
 
 ### [Segundo dia](https://github.com/Didone/csvms/milestone/2)
 
@@ -30,6 +31,6 @@ Neste dia abordaremos tópicos mais avançados, que um engenheiro de dados deve 
 
 + Otimizador
 + Conexões
-+ Análise
++ Análise de dados
 + Armazenamento
-+ Processamento
++ Processamento distribuído
