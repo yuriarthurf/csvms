@@ -21,75 +21,22 @@ log = logger()
 
 def rnm(table:str, column:str) -> str:
     """Rename table column
-
-    Parameters
-    ----------
-    table:`str`
-        Table name
-
-    column:`str`
-        Column name
-
-    Returns
-    ----------
-    `str`
-        Column renamed
+    :param table: Table name
+    :param column: Column name
+    :return: Column renamed
     """
     if str(column).find('.')!=-1:
         return column
     return f"{table}.{column}"
 
 def _nan_(value:Any) -> bool:
-    """
-    Check for None values
-
-    Parameters
-    ----------
-    value:`Any`
-        The value to check
-
-    Returns
-    ----------
-    bool:
-        False if value is None
+    """Check for None values
+    :param value: The value to check
+    :return: False if value is None
     """
     if value is None:
         return False
     return value
-
-class Index():
-    """Represents a table index"""
-    def __init__(self, name:str, table:"Table", attribute:str) -> None:
-        """Create index from table"""
-        self.name = name
-        self.attribute = attribute
-        self.location = f"{table.database.location}/.index/{table.name}"
-        self.tree:Node = None
-        self.tree = self._tree_(table)
-        table.add_index(self)
-
-    def _tree_(self, table:"Table") -> Node:
-        """Create index tree"""
-        _root:Node = None
-        for idx, _ in enumerate(table):
-            key = table[idx][self.attribute]
-            if _root is None:
-                _root = Node(key, idx)
-            else:
-                _root.insert(key, idx)
-        return _root
-
-    def update(self, table:"Table") -> "Index":
-        """Update index"""
-        self.tree = self._tree_(table)
-        return self
-
-    def search(self, key) -> Node:
-        """Index search"""
-        try:
-            return self.tree.search(key).data
-        except ValueError as err:
-            log.error(err)
 
 class Table():
     """
@@ -163,19 +110,14 @@ class Table():
         data:List[tuple]=None, temp:bool=False):
         """
         Table representation and the data file using database location path to store all rows
-
-        Parameters
-        ----------
-        name : `str`
+        :param name:
             Table identifier composed by database name and the table name separated by '.'
             If the database name was omitted, uses the default database instead
-
-        columns : `Dict[str,type]`, `optional`
+        :pram columns:
             Dictionary with columns names and data types. Only python primitive type are alowed.
             If None, load from catalog definition. *Default is None*
 
-            #### Example
-
+            # Example
             ```
             Table(
                 name='sample',
@@ -183,12 +125,10 @@ class Table():
                     'att1':str,
                     'att2':int})
             ```
-
-        data : `List[tuple]`, `optional`
+        :param data:
             Load table tuples into table rows. If None load from data file. *Default is None*
 
             #### Example
-
             ```
             Table(
                 name='sample',
@@ -199,11 +139,9 @@ class Table():
                     ('a',1),
                     ('b',2)])
             ```
-
-        temp : `bool`, `optional`
+        :param temp :
             If 'False' create datafile, other else the rows will be available only on python memory.
             *Default False*
-
         """
         self.index = dict()
         self.journal = list()
@@ -227,29 +165,16 @@ class Table():
 
     @classmethod
     def _op_ts_(cls) -> str:
-        """
-        Get the system date time and format
-
-        Returns
-        ----------
-        str:
-            Return a formatted timestamp
+        """Get the system date time and format
+        :return: Return a formatted timestamp
         """
         return datetime.today().isoformat().replace('T',' ')
 
     @classmethod
     def _condition_parser_(cls, exp:str) -> List[str]:
         """Condition parser
-
-        Parameters
-        ----------
-        exp:`str`
-            String with operation
-
-        Returns
-        ----------
-        List[str]:
-            List with operation name and value
+        :param exp: String with operation
+        :return: List with operation name and value
         """
         ops = '|'.join(Table.operations.keys())
         match = next(re.finditer(rf"({ops})\s+(.+)", exp, re.IGNORECASE))
@@ -257,12 +182,12 @@ class Table():
 
     @property
     def full_name(self):
-        """Return table full name identifier"""
+        """Returns table full name identifier"""
         return f"{self.database.name}.{self.name}"
 
     @property
     def definition(self) -> dict:
-        """Return table definition as dictionary"""
+        """Returns table definition as dictionary"""
         return dict(
             name=self.full_name,
             columns = {k: Table._strtypes_[v] for k, v in self.columns.items()},
@@ -271,34 +196,36 @@ class Table():
 
     @property
     def location(self) -> str:
-        """Return table location on file system as string"""
+        """Returns table location on file system as string"""
         return f"{self.database.location}/{self.name}.{Table._FORMAT_}"
 
     @property
     def empty_row(self) -> tuple:
-        """Return an tuple with 'None' values for each column"""
+        """Returns an tuple with 'None' values for each column"""
         return tuple([None for _ in self.columns])
 
     @property
     def transaction_log(self) -> Path:
-        """Path to transaction log"""
+        """Returns Path to transaction log"""
         return Path(f"{Database.FILE_DIR}/log/{self.full_name}")
 
-    def _redo_(self, values:tuple) -> bool:
-        """Write transaction redo log file"""
+    def _redo_(self, values:tuple) -> None:
+        """Write transaction redo log file
+        :param values: Tuple of values"""
         self.journal.append(values)
 
     def _value_(self, row:tuple, key:str):
-        """Get valeu from row by column name if it's a columnn identifier
+        """Get value from row by column name if it's a columnn identifier
         :param row: Row tuple
         :param key: Column identifier
-        """
+        :return: attribute value"""
         if key in self.columns.keys():
             return row[key]
         return key
 
     def add_index(self, index:"Index"):
-        """Add index to table"""
+        """Update table indexes
+        :param index: New table index"""
         self.index.update({index.name:index})
 
     def load(self) -> List[tuple]:
@@ -309,11 +236,11 @@ class Table():
         definition = self.database.catalog[self.full_name]
         # Load column definitions
         self.columns = {key:Table.dtypes[value] for key, value in definition["columns"].items()}
-        # Load indexes
+        # Load indexes, if exists
         for key, value in definition["indexes"].items():
             with open(f"{value}/{key}", 'rb') as index:
                 self.index.update({key:pickle.load(index)})
-        # Load data
+        # Load data, if exists
         with open(self.location, mode='r', encoding="utf-8") as csv_file:
             for raw in reader(csv_file, delimiter=Table._CSVSEP_):
                 row = list()
@@ -322,10 +249,10 @@ class Table():
                 yield tuple(row)
 
     def save(self) -> bool:
-        """Write data to file system"""
+        """Write data to file system
+        :return: True if was succeeded"""
         if self.temporary:
             raise TableException("Can't save temporary tables")
-
         # Transaction log
         makedirs(self.transaction_log, exist_ok=True)
         log_file = self.transaction_log.joinpath("redo")
@@ -333,7 +260,6 @@ class Table():
             for values in self.journal:
                 writer(redolog).writerow(values)
             self.journal = list()
-
         # Save table index
         for name, idx in self.index.items():
             idx_location = Path(idx.location)
@@ -341,7 +267,6 @@ class Table():
             idx_file = idx_location.joinpath(name)
             with open(idx_file, mode='wb') as index:
                 pickle.dump(idx.update(self), index)
-
         # Table data
         with open(self.location, mode='w', encoding="utf-8") as csv_file:
             csv_writer = writer(csv_file, delimiter=Table._CSVSEP_, quotechar='"')
@@ -425,7 +350,8 @@ class Table():
         return self
 
     def clean(self) -> bool:
-        """Remove all table data"""
+        """Remove all table data
+        :return: True if was succeeded"""
         self._rows = list()
         if exists(self.location):
             remove(self.location)
@@ -434,13 +360,19 @@ class Table():
         return True
 
     def drop(self) -> bool:
-        """Remove physical file"""
+        """Remove physical file
+        :return: True if was succeeded"""
         remove(self.location)
         del self.database.catalog[self.full_name]
         return True
 
     def show(self, size:int=20, trunc:bool=True) -> str:
-        """Print as pretty table data"""
+        """Print as pretty table data
+        :param size: Maximum number of lines to print
+        :param trunc: If true remove de full column name.
+                      For example 'table.column1' will be printed like 'column1'
+        :return: String table representaion
+        """
         # Ugly code for a pretty table...
         idx_pad = 3
         # Max size of each column
@@ -495,6 +427,9 @@ class Table():
         return f"""{tbl}{sep}\n{col}\n{sep}\n{sep}\n"""
 
     def _validade_(self, value) -> tuple:
+        """Check if the values are compatible with column data type
+        :param value: Tuple of values to check
+        :return: Tuple with cast in all values according to the data type"""
         row = tuple()
         try:
             for idx, val in enumerate(self.columns.values()):
@@ -524,7 +459,7 @@ class Table():
         """Update row
         :param idx: Index row to update
         :param value: New values to the row
-        """
+        :return: True if was succeeded"""
         self._rows[idx] = self._validade_(value)
         self._redo_(('U',(Table._op_ts_()))+tuple(value))
         if not self.temporary:
@@ -542,24 +477,28 @@ class Table():
             log.info("Row %s deleted", data)
 
     def __getitem__(self, key):
-        """Return rows as Dict"""
+        """Get table row
+        :param key: Row index
+        :return: Row as dict
+        """
         try:
             return {n:self._rows[key][i] for i,n in enumerate(self.columns)}
         except IndexError:
             log.debug("Row %s not found", key)
             return {col:None for col in self.columns.keys()}
 
-    def __iter__(self):
-        """Iteration over all rows"""
+    def __iter__(self) -> iter:
+        """Get all table rows
+        :return: Row iterator"""
         for row in self._rows:
             yield row
 
     def __len__(self):
-        """Number of rows"""
+        """Returns number of table rows"""
         return len(self._rows)
 
     def __repr__(self):
-        """Table definition in JSON format"""
+        """Returns table definition in JSON format"""
         return json.dumps(self.definition)
 
     def __str__(self):
@@ -789,3 +728,48 @@ class Table():
     #TODO: Implement RIGHT SEMI join operator `ᐳᐊ`
     #TODO: Implement LEFT ANTI join operator `ᐅ`
     #TODO: Implement RIGHT ANTI join operator `◁`
+
+class Index():
+    """Represents a table index"""
+    def __init__(self, name:str, table:"Table", attribute:str) -> None:
+        """Create index from table
+        :param name: Index name
+        :param table: Table object where the index will be created
+        :param attribute: Column name to index
+        """
+        self.name = name
+        self.attribute = attribute
+        self.location = f"{table.database.location}/.index/{table.name}"
+        self.tree:Node = None
+        self.tree = self._tree_(table)
+        table.add_index(self)
+
+    def _tree_(self, table:"Table") -> Node:
+        """Create index tree
+        :param table: Table object to create the index tree
+        :return: Tree nodes
+        """
+        _root:Node = None
+        for idx, _ in enumerate(table):
+            key = table[idx][self.attribute]
+            if _root is None:
+                _root = Node(key, idx)
+            else:
+                _root.insert(key, idx)
+        return _root
+
+    def update(self, table:"Table") -> "Index":
+        """Recreate index based on table data
+        :param table: Table object to update
+        :return: Updated index"""
+        self.tree = self._tree_(table)
+        return self
+
+    def search(self, key) -> Node:
+        """Search value in table index
+        :param key: Value to find
+        :return: Row index where the key is located"""
+        try:
+            return self.tree.search(key).data
+        except ValueError as err:
+            log.error(err)
