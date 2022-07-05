@@ -44,30 +44,16 @@ class Table():
 
     Class variables
     ----------
-    dtypes : `Dict[str,type]`
-        Supported columns data types
-
-    operations : `Dict[str,Callable]`
-        Supported operator on selection operations
-
-    functions : `Dict[str,Callable]`
-        Supported functions on extended operations
+    dtypes: Supported columns data types
+    operations: Supported operator on selection operations
+    functions: Supported functions on extended operations
 
     Attributes
     ----------
-    name : `str`
-        Table name identifier
-
-    database : `Database`
-        Database where the table are located
-
-    columns : `Dict[str,type]`
-        Table attributes
-
-    temporary : `bool`
-        True if table is temporary.
-        Important: Temporary table can't be save on disk
-
+    name: Table name identifier
+    database: Database where the table are located
+    columns: Table attributes
+    temporary: True if table is temporary.
     """
     _FORMAT_="csv" # Data file format
     _CSVSEP_=";"   # Separator
@@ -103,7 +89,7 @@ class Table():
         #TODO: Concatenate two string
         #TODO: Raises expr1 to the power of expr2.
     }
-    # Supported operations reverse
+    # Supported operations in reverse
     _strtypes_ = {value:key for key, value in dtypes.items()}
 
     def __init__(self, name:str, columns:Dict[str,type]=None,
@@ -205,7 +191,7 @@ class Table():
         return tuple([None for _ in self.columns])
 
     @property
-    def transaction_log(self) -> Path:
+    def journal_path(self) -> Path:
         """Returns Path to transaction log"""
         return Path(f"{Database.FILE_DIR}/log/{self.full_name}")
 
@@ -231,8 +217,7 @@ class Table():
     def load(self) -> List[tuple]:
         """Load csv file from path with column formats
         :param table_id: Table full name
-        :return: Tuple iterator
-        """
+        :return: Tuple iterator"""
         definition = self.database.catalog[self.full_name]
         # Load column definitions
         self.columns = {key:Table.dtypes[value] for key, value in definition["columns"].items()}
@@ -254,8 +239,8 @@ class Table():
         if self.temporary:
             raise TableException("Can't save temporary tables")
         # Transaction log
-        makedirs(self.transaction_log, exist_ok=True)
-        log_file = self.transaction_log.joinpath("redo")
+        makedirs(self.journal_path, exist_ok=True)
+        log_file = self.journal_path.joinpath("redo")
         with open(log_file, mode='a', encoding="utf-8") as redolog:
             for values in self.journal:
                 writer(redolog).writerow(values)
@@ -280,8 +265,7 @@ class Table():
         :param option: Accepts ADD, DROP and MODIFY
         :param column: Where to apply alteration
         :param new: New column definition. Only used on MODIFY operations. Default is None
-        :return: The new modified table
-        """
+        :return: The new modified table"""
         for key, val in column.items():
             if option.upper() == "ADD":
                 return self._add_column_(key, val)
@@ -297,8 +281,7 @@ class Table():
         """Add new column to table
         :param name: Column name
         :param dtype: Column data type
-        :return: The new modified table
-        """
+        :return: The new modified table"""
         self.columns.update({name:dtype}) # Add column definition
         for idx, row in enumerate(self._rows):
             self._rows[idx] = row + (dtype(),) # Add default values
@@ -307,8 +290,7 @@ class Table():
     def _drop_column_(self, column:str) -> "Table":
         """Drop column from table
         :param key: Column name
-        :return: The new modified table
-        """
+        :return: The new modified table"""
         idx = None
         for pos, col in enumerate(self.columns.keys()):
             if col == column:
@@ -327,8 +309,7 @@ class Table():
         """Drop column from table
         :param name: Column name
         :param column: New column
-        :return: The new modified table
-        """
+        :return: The new modified table"""
         idx = None
         val = next(iter(column.values()))
         for pos, col in enumerate(self.columns.keys()):
@@ -371,8 +352,7 @@ class Table():
         :param size: Maximum number of lines to print
         :param trunc: If true remove de full column name.
                       For example 'table.column1' will be printed like 'column1'
-        :return: String table representaion
-        """
+        :return: String table representaion"""
         # Ugly code for a pretty table...
         idx_pad = 3
         # Max size of each column
@@ -447,8 +427,7 @@ class Table():
     def append(self, *values) -> bool:
         """Add new row
         :param values: list of values, separated by comma, to insert into
-        :return: True if table insertion was succeeded
-        """
+        :return: True if table insertion was succeeded"""
         self._rows.append(self._validade_(values))
         self._redo_(('I',(Table._op_ts_()))+tuple(values))
         if not self.temporary:
@@ -468,8 +447,7 @@ class Table():
 
     def __delitem__(self, idx) -> None:
         """Remove line from table
-        :param idx: Row table index to delete
-        """
+        :param idx: Row table index to delete"""
         data = self._rows[idx]
         self._redo_(('D',(Table._op_ts_()))+data)
         del self._rows[idx]
@@ -479,8 +457,7 @@ class Table():
     def __getitem__(self, key):
         """Get table row
         :param key: Row index
-        :return: Row as dict
-        """
+        :return: Row as dict"""
         try:
             return {n:self._rows[key][i] for i,n in enumerate(self.columns)}
         except IndexError:
@@ -508,8 +485,7 @@ class Table():
     def extend(self, row:dict, ast:dict):
         """ Resolve functions recursively
         :param ast: parsed expression
-        :return: Calculated value
-        """
+        :return: Calculated value"""
         if isinstance(ast, dict):
             for key, val in ast.items():
                 _x_, _y_ = val
@@ -529,8 +505,7 @@ class Table():
     def logical_evaluation(self, row:dict, ast:dict) -> bool:
         """Recursively evaluate conditions
         :param ast: Abstract Syntax Tree
-        :return: Boolean result
-        """
+        :return: Boolean result"""
         if isinstance(ast, dict):
             for key, val in ast.items():
                 if key in ['missing','exists']:
@@ -638,7 +613,7 @@ class Table():
         """Selection Operator (σ)
         :param condition: A expression composed by the logic operation and list of values.
                           See 'operations' dictionary to get the list of valid options
-        ### Exemples
+        # Exemples
 
         where id < 2
         `where({'lt':['id',2]})`
@@ -646,7 +621,7 @@ class Table():
         where val = 'George' and id > 1
         `where({'and':[{"eq":['val','George']},{"gt":['id',1]}]})`
 
-        ### Operations
+        # Operations
         List of supported operations and the logical equivalent python evaluation
 
         | Name    | Python eval |
@@ -735,20 +710,18 @@ class Index():
         """Create index from table
         :param name: Index name
         :param table: Table object where the index will be created
-        :param attribute: Column name to index
-        """
+        :param attribute: Column name to index"""
         self.name = name
         self.attribute = attribute
         self.location = f"{table.database.location}/.index/{table.name}"
-        self.tree:Node = None
         self.tree = self._tree_(table)
+        #Update table definition with index
         table.add_index(self)
 
     def _tree_(self, table:"Table") -> Node:
         """Create index tree
         :param table: Table object to create the index tree
-        :return: Tree nodes
-        """
+        :return: Tree nodes"""
         _root:Node = None
         for idx, _ in enumerate(table):
             key = table[idx][self.attribute]
