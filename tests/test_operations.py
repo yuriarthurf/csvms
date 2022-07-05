@@ -29,7 +29,8 @@ def test_union():
         "columns": {
             "chave": "integer",
             "desc": "text",
-            "valor": "float"}}
+            "valor": "float"},
+        'indexes': {}}
     assert [r for r in (A + B)] == [
         (1,"a",0.55),
         (3,"c",None),
@@ -43,7 +44,8 @@ def test_inserct():
         "columns": {
             "chave": "integer",
             "desc": "text",
-            "valor": "float"}}
+            "valor": "float"},
+        'indexes': {}}
     assert [r for r in (A % B)] == [(1,"a",0.55)]
 
 def test_diff():
@@ -53,7 +55,8 @@ def test_diff():
         "columns": {
             "chave": "integer",
             "desc": "text",
-            "valor": "float"}}
+            "valor": "float"},
+        'indexes': {}}
     assert [r for r in (A - B)] == [(3,"c",None)]
 
     assert (B - A).definition == {
@@ -61,7 +64,8 @@ def test_diff():
         "columns": {
             "chave": "integer",
             "desc": "text",
-            "valor": "float"}}
+            "valor": "float"},
+        'indexes': {}}
     assert [r for r in (B - A)] == [(2,"b",1.05)]
 
 def test_product():
@@ -70,7 +74,8 @@ def test_product():
         "name": "mock.(A×B)",
         "columns": {
             "A.chave": "integer","A.desc": "text","A.valor": "float",
-            "B.chave": "integer","B.desc": "text","B.valor": "float"}}
+            "B.chave": "integer","B.desc": "text","B.valor": "float"},
+        'indexes': {}}
     assert [r for r in (A * B)] == [
         (1, 'a', 0.55, 1, 'a', 0.55),
         (1, 'a', 0.55, 2, 'b', 1.05),
@@ -85,7 +90,8 @@ def test_selection():
         'columns': {
             'chave': 'integer',
             'desc': 'text',
-            'valor': 'float'}}
+            'valor': 'float'},
+        'indexes': {}}
     assert [r for r in A.σ({'and':[
             {"eq":['chave',1]},
             {"exists":'valor'}]})] == [(1,"a",0.55)]
@@ -108,11 +114,13 @@ def test_projection():
     """Test projection operator"""
     assert A.π([{'value':'chave'}]).definition == {
         'name': 'mock.(Aπ)',
-        'columns': {'chave': 'integer'}}
+        'columns': {'chave': 'integer'},
+        'indexes': {}}
     assert [r for r in A.π([{'value':'chave'}])] == [(1,), (3,)]
     assert A.π([{'value':'chave','name':'key'}]).definition == {
         'name': 'mock.(Aπ)',
-        'columns': {'key': 'integer'}}
+        'columns': {'key': 'integer'},
+        'indexes': {}}
     assert [r for r in A.π([{'value':'chave','name':'key'}])] == [(1,), (3,)]
 
 def test_extended_projection():
@@ -123,7 +131,8 @@ def test_extended_projection():
             'chave': 'integer',
             'desc': 'text',
             'valor': 'float',
-            '%': 'integer'}}
+            '%': 'integer'},
+        'indexes': {}}
     assert [r for r in A.Π(100,'%')] == [(1,"a",0.55,100),(3,"c",None,100)]
     assert [r for r in A.Π({'add':['valor',2]})] == [(1,'a',0.55,2.55),(3,'c',None,None)]
     assert [r for r in A.Π({'sub':['valor',2]})] == [(1,'a',0.55,-1.45),(3,'c',None,None)]
@@ -155,6 +164,6 @@ def test_rename_projection():
         'columns': {
             'chave': 'integer',
             'desc': 'text',
-            'valor': 'float'
-        }
+            'valor': 'float'},
+        'indexes': {}
     }

@@ -36,7 +36,7 @@ def test_table_data(tbl):
     assert tbl[3] == {'chave': None, 'desc': None, "valor": None} # Out of index
     return True
 
-def test_imput_output(tbl):
+def test_input_output(tbl):
     """ Teste table Imput and Outup """
     assert tbl.location == f"{tbl.database.location}/{tbl.name}.{Table._FORMAT_}"
     assert tbl.save()
@@ -46,7 +46,8 @@ def test_imput_output(tbl):
         'columns': {
             'chave': 'integer',
             'desc': 'text',
-            'valor': 'float'}}
+            'valor': 'float'},
+        'indexes': {}}
     assert test_table_data(Table(f"{tbl.full_name}"))
     assert tbl.drop()
     assert not exists(tbl.location)
