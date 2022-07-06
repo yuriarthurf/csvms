@@ -104,9 +104,39 @@ SELECT reduce(agg['amargo'], 0.0, (s, x) -> s + x, s -> s) AS "amargo"
      , reduce(agg['doce'], 0.0, (s, x) -> s + x, s -> s) AS "doce"
   FROM (
   SELECT multimap_agg(t.tp_fruta, if(v.qtd_venda IS NULL,0,v.qtd_venda) * t.vl_fruta) agg
-  FROM tipo_frutas t
-  LEFT OUTER JOIN lista_frutas l ON t.tp_fruta = l.tp_fruta
-  LEFT OUTER JOIN venda_frutas v ON l.nm_fruta = v.nm_fruta) vendas
+  FROM venda_frutas v
+  RIGHT OUTER JOIN lista_frutas l ON v.nm_fruta = l.nm_fruta
+  RIGHT OUTER JOIN tipo_frutas t ON t.tp_fruta = l.tp_fruta) vendas
+;
+
+-- https://prestodb.io/docs/0.217/functions/datetime.html
+-- Quantas frutas foram vendidas em cada dia
+SELECT dt AS "data da vendda"
+     , if(agg['banana'] IS NULL,0,
+          reduce(agg['banana'], 0.0, (s, x) -> s + x, s -> s)) AS "banana"
+     , if(agg['bergamota'] IS NULL,0,
+          reduce(agg['bergamota'], 0.0, (s, x) -> s + x, s -> s)) AS "bergamota"
+     , if(agg['limão'] IS NULL,0,
+          reduce(agg['limão'], 0.0, (s, x) -> s + x, s -> s)) AS "limão"
+     , if(agg['maçã'] IS NULL,0,
+          reduce(agg['maçã'], 0.0, (s, x) -> s + x, s -> s)) AS "maçã"
+  FROM (
+  SELECT DATE(v.op_ts) dt
+       , multimap_agg(l.nm_fruta, if(v.qtd_venda IS NULL,0,v.qtd_venda)) agg
+  FROM (SELECT raw_venda_frutas.op_ts
+             , raw_venda_frutas.qtd_venda
+             , raw_venda_frutas.nm_fruta
+          FROM (SELECT max(op_ts) last
+                     , cod_venda
+                 FROM raw_venda_frutas
+                GROUP BY cod_venda) current
+          JOIN raw_venda_frutas 
+            ON current.cod_venda = raw_venda_frutas.cod_venda
+          AND current.last = raw_venda_frutas.op_ts) v
+        RIGHT OUTER JOIN csvms.lista_frutas l ON v.nm_fruta = l.nm_fruta
+  GROUP BY DATE(v.op_ts))
+  WHERE dt is not NULL
+  ORDER BY 1
 ;
 
 -- EXPLAIN
