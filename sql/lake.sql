@@ -1,4 +1,6 @@
 --aws s3 sync docs/data/log s3://compass.uol.bootcamp/sql
+CREATE DATABASE csvms;
+
 -- https://docs.aws.amazon.com/pt_br/athena/latest/ug/data-types.html
 CREATE EXTERNAL TABLE csvms.raw_lista_frutas(
     op string, 
@@ -80,9 +82,9 @@ SELECT raw_venda_frutas.cod_venda
 -- https://docs.aws.amazon.com/pt_br/athena/latest/ug/presto-functions.html
 SELECT t.tp_fruta tipo
      , sum(if(v.qtd_venda IS NULL,0,v.qtd_venda) * t.vl_fruta) total
-  FROM tipo_frutas t
-  LEFT OUTER JOIN lista_frutas l ON t.tp_fruta = l.tp_fruta
-  LEFT OUTER JOIN venda_frutas v ON v.nm_fruta = l.nm_fruta
+  FROM venda_frutas v
+  RIGHT OUTER JOIN lista_frutas l ON v.nm_fruta = l.nm_fruta
+  RIGHT OUTER JOIN tipo_frutas t ON t.tp_fruta = l.tp_fruta
  GROUP BY t.tp_fruta
  ORDER BY 2 desc
 ;
