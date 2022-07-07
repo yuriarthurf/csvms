@@ -15,13 +15,14 @@ We recommend to install the following tools before start:
 
 ### Environments
 
-After clone this repository, use [Poetry](https://python-poetry.org/) to create your virtual environment.
+After clone this repository, use [Poetry](https://python-poetry.org/) to create your virtual environment. And install all dependencies.
+If you are participating in one of our bootcamps use the `-E bootcamp` option to install all the optional packages.
 
 ```bash
 # Activate your virtual environment
 poetry shell
 # Install all dependencies
-poetry install
+poetry install -E bootcamp
 ```
 
 ### Writing code
@@ -49,6 +50,7 @@ Use `pytest` framework to write and run your tests
 ```bash
 pytest --pdb
 ```
+
 ```log
 ================================== test session starts ===================================
 platform linux -- Python 3.8.10, pytest-5.4.3, py-1.11.0, pluggy-0.13.1
