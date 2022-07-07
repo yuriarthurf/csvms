@@ -3,7 +3,7 @@ import logging
 import re
 from os import environ
 
-__version__ = '0.2.12'
+__version__ = '0.2.13'
 
 def logger(identifier:str=None):
     """CSVMS Logger"""
