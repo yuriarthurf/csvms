@@ -285,7 +285,7 @@ class Table():
         self.columns.update({name:dtype}) # Add column definition
         for idx, row in enumerate(self._rows):
             self._rows[idx] = row + (dtype(),) # Add default values
-        return self
+        return self.save()
 
     def _drop_column_(self, column:str) -> "Table":
         """Drop column from table
@@ -303,7 +303,7 @@ class Table():
             row = list(row) # Convert to list
             del row[idx] # remove value for column index
             self._rows[pos] = tuple(row) # Update row
-        return self
+        return self.save()
 
     def _modify_column_(self, name:str, column:Dict[str,type]) -> "Table":
         """Drop column from table
@@ -328,7 +328,7 @@ class Table():
             log.debug(err)
             self._rows = tmp_rows
             raise ColumnException(f"Cant change data type for column {name}")
-        return self
+        return self.save()
 
     def clean(self) -> bool:
         """Remove all table data
