@@ -18,7 +18,6 @@ def interpretador_sql(query):
 
         for k in range(len(values)):
                 values[k] = values[k].replace(')', '')
-                #print(values[k].split(',')[0], values[k].split(',')[1])
                 table.append(values[k].split(',')[0].replace("'", ""), values[k].split(',')[1].replace("'", ""))
 
         table.save()
