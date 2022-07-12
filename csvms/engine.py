@@ -22,7 +22,7 @@ table.append('maçã', 'doce')
 print(table)
 table.save()
 
-#Adicionando dados de outra forma
+#Adicionando dados de outra forma 
 Table(name="lista_frutas2", 
         columns={
                 'nm_fruta':str, 
