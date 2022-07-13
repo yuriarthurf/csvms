@@ -42,14 +42,23 @@ def interpretador_sql(query):
                 return print(table) 
 
         if 'UPDATE' in query:
+                parsed_query = parse(query)
 
                 if 'SET' or 'set' in query:
                         for indice in range(len(table)):
-                                if table[indice]['tp_fruta'] == 'amargo':
+                                if table[indice][list(parsed_query['set'])[0]] == 'amargo':
                                         linha = table[indice]
-                                        linha['tp_fruta'] = 'azedo'
+                                        linha[list(parsed_query['set'])[0]] = list(parsed_query['set']['tp_fruta'].values())[0]
                                         table[indice] = tuple(linha.values())
                                         table.save()
+                return print(table)
+
+        if 'DELETE' in query:
+                query_traduzida = parse(query)
+                for i in range(len(table)):
+                        if table[i][query_traduzida['where']['eq'][0]] == (list(query_traduzida['where']['eq'][1].values()))[0]:
+                                del table[i]
+                                table.save()
                 return print(table)
 
 
@@ -66,3 +75,6 @@ INSERT INTO lista_frutas VALUES ('maçã','doce');""")
 interpretador_sql("""UPDATE lista_frutas
    SET tp_fruta = 'azedo'
    WHERE nm_fruta = 'limão'""")
+
+interpretador_sql("""DELETE FROM lista_frutas 
+ WHERE nm_fruta = 'limão'""")
