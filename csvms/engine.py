@@ -3,6 +3,8 @@ from mo_sql_parsing import parse
 import re
 
 def interpretador_sql(query):
+        global table
+
         if 'CREATE' in query:
                 traduzido = parse(query)
                 try:
@@ -39,6 +41,18 @@ def interpretador_sql(query):
 
                 return print(table) 
 
+        if 'UPDATE' in query:
+
+                if 'SET' or 'set' in query:
+                        for indice in range(len(table)):
+                                if table[indice]['tp_fruta'] == 'amargo':
+                                        linha = table[indice]
+                                        linha['tp_fruta'] = 'azedo'
+                                        table[indice] = tuple(linha.values())
+                                        table.save()
+                return print(table)
+
+
 interpretador_sql("""CREATE TABLE lista_frutas (
     nm_fruta TEXT ,
     tp_fruta TEXT 
@@ -48,3 +62,7 @@ interpretador_sql("""INSERT INTO lista_frutas VALUES ('banana','doce');
 INSERT INTO lista_frutas VALUES ('limão','amargo');
 INSERT INTO lista_frutas VALUES ('bergamota','azedo');
 INSERT INTO lista_frutas VALUES ('maçã','doce');""")
+
+interpretador_sql("""UPDATE lista_frutas
+   SET tp_fruta = 'azedo'
+   WHERE nm_fruta = 'limão'""")
